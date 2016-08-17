@@ -74,16 +74,16 @@ Grund dafür ist die Homematic Benutzeroberfläche. Da gibt es bei der Eingabe v
 #### Wie binde ich die Homematic ein?
 Dafür wird uf der CCU das Addon CUxD benötigt (http://homematic-forum.de/forum/viewtopic.php?f=37&t=15298)
 Ein Gerät (28) System als Schalter anlegen.
-![alt tag](https://raw.githubusercontent.com/akwak2015/Servoduino/trunk/Docs/images/HM0.jpg)
+![alt tag](https://github.com/akwak2015/Servoduino/blob/master/Docs/images/HM0.jpg?raw=true)
 Mit 2 Kanälen für Servo und Relais.
 In Param1: /usr/local/addons/cuxd/curl -s -m 5
 in Param2: http://ip.des.wemos.eintragen
-![alt tag](https://raw.githubusercontent.com/akwak2015/Servoduino/trunk/Docs/images/HM1.jpg)
+![alt tag](https://github.com/akwak2015/Servoduino/blob/master/Docs/images/HM1.jpg?raw=true)
 Die Seriennummern beider Kanäle notieren
-![alt tag](https://raw.githubusercontent.com/akwak2015/Servoduino/trunk/Docs/images/HM2.jpg)
+![alt tag](https://github.com/akwak2015/Servoduino/blob/master/Docs/images/HM2.jpg?raw=true)
 
 Die IP der Homematic und die Seriennummern der beiden Kanäle im Setup auf dem Wemos eintragen
-![alt tag](https://raw.githubusercontent.com/akwak2015/Servoduino/trunk/Docs/images/IF0.jpg)
+![alt tag](https://github.com/akwak2015/Servoduino/blob/master/Docs/images/IF0.jpg?raw=true)
 
 ####Wie binde ich Loxone ein?
 Die Anwendung sendet an die angegebene IP Adresse auf dem angegebenen Port folgende Status:

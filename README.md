@@ -108,13 +108,13 @@ Die IP der Homematic und die Seriennummern der beiden Kanäle im Setup auf dem W
 ![alt tag](https://github.com/akwak2015/Servoduino/blob/master/Docs/images/IF0.jpg?raw=true)
   
 ####Wie binde ich Loxone ein?
-Die Anwendung sendet an die angegebene IP Adresse auf dem angegebenen Port folgende Status: 
-Für Jede Statusänderung des Servos oder Relais (0 für aus, 1 für an): 
-	TAB1|0 
-	RELAY1|0 
-Für jede Taste/Schalter in eckigen Klammern [0 = Schalter 1, 1 = Schalter 2] gefolgt von 0 für aus, 1 für an: 
-	Schalter[0|1]0|1 
-	Taster[0|1]0|1 
-	Web0|1 
-	RWeb0|1  
+Die Anwendung sendet an die angegebene IP Adresse auf dem angegebenen Port folgende Status:  
+Für Jede Statusänderung des Servos oder Relais (0 für aus, 1 für an):  
+	TAB1|0  
+	RELAY1|0   
+Für jede Taste/Schalter in eckigen Klammern [0 = Schalter 1, 1 = Schalter 2] gefolgt von 0 für aus, 1 für an:  
+	Schalter[0|1]0|1  
+	Taster[0|1]0|1  
+	Web0|1  
+	RWeb0|1   
  

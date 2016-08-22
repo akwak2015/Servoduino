@@ -45,6 +45,7 @@ Optional:
 
 #####Wo wird die Hardware angeschlossen?
 Die Pin angaben sind für den Wemos D1 Mini 
+#####Pinbelegung:
 | Hardware                  | Pin            |
 | ------------------------- | -------------- |
 | Servo Motor               | D4             |

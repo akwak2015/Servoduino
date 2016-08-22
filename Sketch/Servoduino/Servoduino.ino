@@ -50,8 +50,10 @@ WiFiUDP Udp;
 oConfig myConfig = {1234, 4321, 2, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000"};
 
 //Version
-String sVersionDatum = "$LastChangedDate: 2016-08-16 18:51:19 +0200 (Di, 16 Aug 2016) $";
-String sVersion = "0.6 - $Revision: 46 $";
+//$LastChangedDate: 2016-08-16 19:12:43 +0200 (Di, 16 Aug 2016) $
+//$Revision: 48 $
+String sVersionDatum = "2016-08-19";
+String sVersion = "0.7";
 
 //Pin Definitionen
 int iServoPin = 2; //WeMos mini D4
@@ -134,8 +136,10 @@ int getOnOffStatus() {
 void sendUDP(String sUDP) {
     if (myConfig.bLoxone != 1) {return;}
     int iPort =  atoi(myConfig.sLoxonePort); 
+    Serial.print("Anzahl Zeichen:");
+    Serial.println(sizeof(sUDP)+2);
     char  sBuffer[sizeof(sUDP)] = "";
-    sUDP.toCharArray(sBuffer,sizeof(sUDP));
+    sUDP.toCharArray(sBuffer,sizeof(sUDP)+2);
     Serial.print("Sende an Loxone: ");
     Serial.println(sBuffer); 
     Udp.beginPacket(myConfig.sLoxoneIP, iPort);
@@ -311,7 +315,8 @@ void wwwrelayan() {
     Serial.println("NICHT weiterleiten");
     htmlresponse0("1");
   }
-  sendRelayState();  
+    sendUDP("RWeb1");
+    sendRelayState();  
 }
 
 void wwwrelayaus() {
@@ -325,6 +330,7 @@ void wwwrelayaus() {
     Serial.println("NICHT weiterleiten");
     htmlresponse0("0");
   }
+  sendUDP("RWeb0");
   sendRelayState(); 
 }
 
@@ -341,6 +347,7 @@ void wwwan() {
     Serial.println("NICHT weiterleiten");
     htmlresponse0("1");
   }
+  sendUDP("Web1");
   sendTabState();  
 }
 
@@ -357,6 +364,7 @@ void wwwaus() {
     Serial.println("NICHT weiterleiten");
     htmlresponse0("0");
   }
+  sendUDP("Web0");
   sendTabState();  
 }
 
@@ -1367,8 +1375,8 @@ void loop() {
     for (int i=0; i<2 ; i++) {
         handlePushButton(i);
         handleSwitch(i);
-        handleAnalog();
     }
+    handleAnalog();
     handleudp();
 //    handleSwitch(1);
     delay(100);

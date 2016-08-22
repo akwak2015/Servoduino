@@ -15,10 +15,12 @@ Teilweise ist es schon einsatzfähig.
 	-	Servo an/aus per Taster, Schalter und HTTP/UDP
 	-	Relais an/aus per HTTP/UDP
 	-	Rückmeldung an die Homematic CCU
+	-	Rückmeldung an Loxone
+
 #####Was läuft vieleicht:
-	-	Rückmeldung an Loxone (ungetestet, muß gegebenenfalls korrigiert werden)
 	-	Rückmeldung mit zusätzlichem Reed/Magnet Kontakt
 	-	Analoger Eingang
+
 #####Was läuft nicht:
 	-	Option Schalter wie Taster (mit eigenem Timer)
 	-	Option Taster mit eigenem Timer
@@ -41,31 +43,44 @@ Optional:
 	-	Max. 2 Schalter
 	-	Analoger Ausgang bis 3V (z.B. Bewegungsmelder)
 
-	
+#####Wo wird die Hardware angeschlossen?
+Die Pin angaben sind für den Wemos D1 Mini 
+	| Hardware      			| Pin			 |
+	| ------------------------- |:--------------:|
+	| Servo Motor 				| D4 			 |
+	| Taster					| D5 und/oder D6 |
+	| Schalter					| D7 und/oder D8 |
+	| Relais					| D1 			 |
+	| Zusätzlicher Magnetsensor	| D2 			 |
+	| Analog Eingang			| A0 			 |
 	
 ####Welche Befehle werden verstanden?
 #####HTTP:
-	http://ip						Einfache Übersichts Seite 
-	http://ip/setup 				Konfiguration
-	http://ip/an					stellt den Servomotor in Position an
-	http://ip/aus					stellt den Servomotor in Position aus
-	http://ip/ran					Relais an
-	http://ip/raus					Relais aus
-	
-	http://ip/status				Status des Servomotor 
-
-	http://ip/resetwifi 			WIFI Einstellungen zurücksetzen
-	http://ip/resetconfig 			Einstellungen löschen 
-	http://ip/werkseinstellungen	Einstellungen und WIFI löschen
-	http://ip/restart				Wemos neu starten
+	| URL     						| Funktion			 					|
+	| ----------------------------- |:-------------------------------------:|
+	| http://ip						| Einfache Übersichts Seite 			|
+	| http://ip/setup 				| Konfiguration							|
+	| http://ip/an					| stellt den Servomotor in Position an	|
+	| http://ip/aus					| stellt den Servomotor in Position aus	|
+	| http://ip/ran					| Relais an								|
+	| http://ip/raus				| Relais aus							|
+	|								|										|
+	| http://ip/status				| Status des Servomotor 				|
+	|								|										|
+	| http://ip/resetwifi 			| WIFI Einstellungen zurücksetzen		|
+	| http://ip/resetconfig 		| Einstellungen löschen 				|
+	| http://ip/werkseinstellungen	| Einstellungen und WIFI löschen		|
+	| http://ip/restart				| Wemos neu starten						|
 	
 #####UDP:
-	an								Servo auf an
-	aus								Servo auf aus
-	ran								Relais an
-	raus							Relais aus
-	status							liefert 1 oder 0 zurück für Position des Servo
-	rstatus							liefert 1 oder 0 zurück für Position des Relais
+	| Befehl   						| Funktion						 					|
+	| ----------------------------- |:-------------------------------------------------:|
+	| an							| Servo auf an										|
+	| aus							| Servo auf aus										|
+	| ran							| Relais an											|
+	| raus							| Relais aus										|
+	| status						| liefert 1 oder 0 zurück für Position des Servo	|
+	| rstatus						| liefert 1 oder 0 zurück für Position des Relais	|
 	
 ######Warum sind die HTML Befehle so "komisch"
 Viele von Euch würden jetzt warscheinlich Befehle im Format HTTP://IP/SERVO?POS=1 oder ähnlich erwarten. 
@@ -93,10 +108,12 @@ Die IP der Homematic und die Seriennummern der beiden Kanäle im Setup auf dem W
   
 ####Wie binde ich Loxone ein?
 Die Anwendung sendet an die angegebene IP Adresse auf dem angegebenen Port folgende Status:
-	TAB[1|0]
-	RELAY[1|0]
-
+Für Jede Statusänderung des Servos oder Relais (0 für aus, 1 für an):
+	TAB1|0
+	RELAY1|0
+Für jede Taste/Schalter in eckigen Klammern [0 = Schalter 1, 1 = Schalter 2] gefolgt von 0 für aus, 1 für an:
+	Schalter[0|1]0|1
+	Taster[0|1]0|1
+	Web0|1
+	RWeb0|1 
  
-
-
-  

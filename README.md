@@ -45,43 +45,43 @@ Optional:
 
 #####Wo wird die Hardware angeschlossen?
 Die Pin angaben sind für den Wemos D1 Mini 
-| Hardware      			| Pin			 |
+| Hardware                  | Pin            |
 | ------------------------- | -------------- |
-| Servo Motor 				| D4 			 |
-| Taster					| D5 und/oder D6 |
-| Schalter					| D7 und/oder D8 |
-| Relais					| D1 			 |
-| Zusätzlicher Magnetsensor	| D2 			 |
-| Analog Eingang			| A0 			 |
-	
+| Servo Motor               | D4             |
+| Taster                    | D5 und/oder D6 |
+| Schalter                  | D7 und/oder D8 |
+| Relais                    | D1             |
+| Zusätzlicher Magnetsensor | D2             |
+| Analog Eingang            | A0             |
+ 
 ####Welche Befehle werden verstanden?
 #####HTTP:
-	| URL     						| Funktion			 					|
-	| ----------------------------- |:-------------------------------------:|
-	| http://ip						| Einfache Übersichts Seite 			|
-	| http://ip/setup 				| Konfiguration							|
-	| http://ip/an					| stellt den Servomotor in Position an	|
-	| http://ip/aus					| stellt den Servomotor in Position aus	|
-	| http://ip/ran					| Relais an								|
-	| http://ip/raus				| Relais aus							|
-	|								|										|
-	| http://ip/status				| Status des Servomotor 				|
-	|								|										|
-	| http://ip/resetwifi 			| WIFI Einstellungen zurücksetzen		|
-	| http://ip/resetconfig 		| Einstellungen löschen 				|
-	| http://ip/werkseinstellungen	| Einstellungen und WIFI löschen		|
-	| http://ip/restart				| Wemos neu starten						|
-	
+| URL                           | Funktion                              |
+| ----------------------------- | ------------------------------------- |
+| http://ip                     | Einfache Übersichts Seite             |
+| http://ip/setup               | Konfiguration                         |
+| http://ip/an                  | stellt den Servomotor in Position an  |
+| http://ip/aus                 | stellt den Servomotor in Position aus |
+| http://ip/ran                 | Relais an                             |
+| http://ip/raus                | Relais aus                            |
+|                               |                                       |
+| http://ip/status              | Status des Servomotor                 |
+|                               |                                       |
+| http://ip/resetwifi           | WIFI Einstellungen zurücksetzen       |
+| http://ip/resetconfig         | Einstellungen löschen                 |
+| http://ip/werkseinstellungen  | Einstellungen und WIFI löschen        |
+| http://ip/restart             | Wemos neu starten                     |
+
 #####UDP:
-	| Befehl   						| Funktion						 					|
-	| ----------------------------- |:-------------------------------------------------:|
-	| an							| Servo auf an										|
-	| aus							| Servo auf aus										|
-	| ran							| Relais an											|
-	| raus							| Relais aus										|
-	| status						| liefert 1 oder 0 zurück für Position des Servo	|
-	| rstatus						| liefert 1 oder 0 zurück für Position des Relais	|
-	
+| Befehl                        | Funktion                                          |
+| ----------------------------- | ------------------------------------------------- |
+| an                            | Servo auf an                                      |
+| aus                           | Servo auf aus                                     |
+| ran                           | Relais an                                         |
+| raus                          | Relais aus                                        |
+| status                        | liefert 1 oder 0 zurück für Position des Servo    |
+| rstatus                       | liefert 1 oder 0 zurück für Position des Relais   |
+ 
 ######Warum sind die HTML Befehle so "komisch"
 Viele von Euch würden jetzt warscheinlich Befehle im Format HTTP://IP/SERVO?POS=1 oder ähnlich erwarten. 
 Grund dafür ist die Homematic Benutzeroberfläche. Da gibt es bei der Eingabe von Sonderzeichen für URLs leicht Probleme. Die o.a. Befehle lassen sich ohne Tricks eingeben.

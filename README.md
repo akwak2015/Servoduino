@@ -45,14 +45,14 @@ Optional:
 
 #####Wo wird die Hardware angeschlossen?
 Die Pin angaben sind für den Wemos D1 Mini 
-	| Hardware      			| Pin			 |
-	| ------------------------- |:--------------:|
-	| Servo Motor 				| D4 			 |
-	| Taster					| D5 und/oder D6 |
-	| Schalter					| D7 und/oder D8 |
-	| Relais					| D1 			 |
-	| Zusätzlicher Magnetsensor	| D2 			 |
-	| Analog Eingang			| A0 			 |
+| Hardware      			| Pin			 |
+| ------------------------- | -------------- |
+| Servo Motor 				| D4 			 |
+| Taster					| D5 und/oder D6 |
+| Schalter					| D7 und/oder D8 |
+| Relais					| D1 			 |
+| Zusätzlicher Magnetsensor	| D2 			 |
+| Analog Eingang			| A0 			 |
 	
 ####Welche Befehle werden verstanden?
 #####HTTP:

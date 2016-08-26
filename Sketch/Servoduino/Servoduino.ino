@@ -43,7 +43,7 @@ typedef struct oconfig oConfig;
 //Version
 //$LastChangedDate: 2016-08-26 11:31:41 +0200 (Fr, 26 Aug 2016) $
 //$Revision: 49 $
-String sVersionDatum = "2016-08-26;
+String sVersionDatum = "2016-08-26";
 String sVersion = "0.7";
 
 oConfig myConfig = {1234, 4321, 2, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000"};

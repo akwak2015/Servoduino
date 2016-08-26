@@ -35,25 +35,18 @@ struct oconfig {
 };
 typedef struct oconfig oConfig;
 
-unsigned int localPort = 2390;      // local port to listen on
 
-char packetBuffer[255]; //buffer to hold incoming packet
-char  ReplyBuffer[] = "acknowledged";       // a string to send back
-
-WiFiManager wifiManager;
-ESP8266WebServer server(80); // Webserver initialisieren auf Port 80
-Servo myservo;
-ESP8266HTTPUpdateServer httpUpdater;
-WiFiUDP Udp;
-
-
-oConfig myConfig = {1234, 4321, 2, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000"};
+// *******************************************************************
+// ******* Globale Variablen *****************************************
+// *******************************************************************
 
 //Version
-//$LastChangedDate: 2016-08-16 19:12:43 +0200 (Di, 16 Aug 2016) $
-//$Revision: 48 $
-String sVersionDatum = "2016-08-19";
+//$LastChangedDate: 2016-08-26 11:31:41 +0200 (Fr, 26 Aug 2016) $
+//$Revision: 49 $
+String sVersionDatum = "2016-08-26;
 String sVersion = "0.7";
+
+oConfig myConfig = {1234, 4321, 2, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000"};
 
 //Pin Definitionen
 int iServoPin = 2; //WeMos mini D4
@@ -78,6 +71,33 @@ unsigned long tSwitchLast[2]; //letzte Schalterbetätigung
 
 int iAnalogLastState = 0;
 int iAnaloglastMillis = millis();
+
+unsigned long iTimerMillis = millis();
+bool bTimerAktiv = false;
+
+unsigned int localPort = 2390;      // local port to listen on
+char packetBuffer[255]; //buffer to hold incoming packet
+char  ReplyBuffer[] = "acknowledged";       // a string to send back
+
+// *******************************************************************
+// ******* Libraries         *****************************************
+// *******************************************************************
+WiFiManager wifiManager;
+ESP8266WebServer server(80); // Webserver initialisieren auf Port 80
+Servo myservo;
+ESP8266HTTPUpdateServer httpUpdater;
+WiFiUDP Udp;
+
+// *******************************************************************
+// ******* Programm          *****************************************
+// *******************************************************************
+
+// Timer in Sekunden
+void setTimerSec(int iTime) { 
+  iTimerMillis = millis()+(1000 * iTime);
+  bTimerAktiv = true;
+  Serial.println("Timer aktiv: " + String(1000*iTime));
+}
 
 void saveConfig() {
   int eeAddress = 0;
@@ -137,7 +157,7 @@ void sendUDP(String sUDP) {
     if (myConfig.bLoxone != 1) {return;}
     int iPort =  atoi(myConfig.sLoxonePort); 
     Serial.print("Anzahl Zeichen:");
-    Serial.println(sizeof(sUDP)+2);
+    Serial.println(sizeof(sUDP)+2); //+2 um sicher alle Zeichen zu erwischen.
     char  sBuffer[sizeof(sUDP)] = "";
     sUDP.toCharArray(sBuffer,sizeof(sUDP)+2);
     Serial.print("Sende an Loxone: ");
@@ -254,8 +274,13 @@ void wwwmelde_FullStatus() {
   if (iAnAusStatus == 1) { sResp += "<td class=\"on\">\n";}
   if (iAnAusStatus == 0) { sResp += "<td class=\"off\">\n";}
   if (iAnAusStatus == -1) { sResp += "<td>\n";}
-
   sResp += String(iErg) + "&deg;</td>\n";
+  
+  if (bTimerAktiv) { 
+      int iTime = round((iTimerMillis-millis())/1000);
+      sResp += "<td style=align-right;>" + String(iTime)  + "</TD>\n";  
+      }
+  
   sResp += "</tr><tr>";
   sResp += "<td>Aktueller Relay Status: </td>";
   if (iRelay == 1) { sResp += "<td class=\"on\">An</td>\n";}
@@ -336,9 +361,18 @@ void wwwrelayaus() {
 
 void wwwan() {
   String bReload = server.arg("reload");
+  String sTimer = server.arg("timer");
+  int iTimer=0;
   Serial.println("Reload? = " + bReload);
+  Serial.println("Timer? = " + sTimer);
   int iStatus=myConfig.iAn;
   myservo.write(getKorrigiert(iStatus));
+  if (sTimer!="") {
+    iTimer = sTimer.toInt();
+      if (iTimer > 2) {
+          setTimerSec(iTimer);   
+      } 
+  }
   if (bReload == "1") {
     Serial.println("Zur Root Seite weiterleiten");
     htmlreloadpresite("/","AN");
@@ -365,7 +399,8 @@ void wwwaus() {
     htmlresponse0("0");
   }
   sendUDP("Web0");
-  sendTabState();  
+  sendTabState();
+  bTimerAktiv=false;  
 }
 
 void  wwwanwert() {
@@ -1147,11 +1182,19 @@ void handlePushButton(int iPB) {
         //Serial.println("");
         int iPushButtonState = digitalRead(iPushButtonPin[iPB]);
         if ((iPushButtonState == 1) and iPushButtonState != iPushButtonLastState[iPB]) {
-            toggle();
+            if (myConfig.bPushButtonTimer[iPB]) {
+              setTimerSec(myConfig.iPushButtonTimer[iPB]);
+              setPosAn();
+            }
+            else {
+              toggle();
+              bTimerAktiv=false; //Wenn manuell an oder ausgeschaltet, dann brauchen wir keinen Timer mehr
+            }
             iPushButtonLastState[iPB] = iPushButtonState;
             tPushButtonLast[iPB]=currentMillis;
             sendUDP("Taster[" + String(iPB) + "]1");
-            }
+        }
+        // Status Losgelassen merken und an Geräte übermitteln
         else if ((iPushButtonState == 0) and iPushButtonState != iPushButtonLastState[iPB]) {
             iPushButtonLastState[iPB] = iPushButtonState;
             sendUDP("Taster[" + String(iPB) + "]0");
@@ -1162,17 +1205,30 @@ void handleSwitch(int iSW){
     unsigned long currentMillis = millis();
     int iSwitchState = digitalRead(iSwitchPin[iSW]);  
     if (iSwitchState != iSwitchLastState[iSW]) {
+        //Switch on
         if (iSwitchState == 1) {
-                setPosAn();
-                sendUDP("Schalter[" + String(iSW) + "]1");
-
-            } 
-         if (iSwitchState == 0) {
-                setPosAus();
-                sendUDP("Schalter[" + String(iSW) + "]0");
+            if (myConfig.bSwitchAsPushButton[iSW]) {
+              setTimerSec(myConfig.iSwitchTimer[iSW]);
             }
-            iSwitchLastState[iSW] = iSwitchState; 
-            tSwitchLast[iSW]=currentMillis;
+            else {
+              bTimerAktiv=false; //Wenn manuell an oder ausgeschaltet, dann brauchen wir keinen Timer mehr
+            }
+            setPosAn();
+            sendUDP("Schalter[" + String(iSW) + "]1");
+         } 
+         //Switch off
+         if (iSwitchState == 0) {
+                if (myConfig.bSwitchAsPushButton[iSW]) {
+                  Serial.println("Switch turns off in Timermode... nothinmg to do");
+                }
+                else {
+                  setPosAus();
+                  bTimerAktiv=false; //Wenn manuell an oder ausgeschaltet, dann brauchen wir keinen Timer mehr
+                }
+                sendUDP("Schalter[" + String(iSW) + "]0");
+         }
+         iSwitchLastState[iSW] = iSwitchState; 
+         tSwitchLast[iSW]=currentMillis;
       }
 }
 bool charcomp(char* cbuf, String scmp) {
@@ -1282,6 +1338,18 @@ void handleAnalog() {
   iAnaloglastMillis = currentMillis ; 
 }
 
+void handleTimer(){
+  if (bTimerAktiv) {
+    int iTime=millis();
+    //Serial.println(String(iTimerMillis) + " - " + String(iTime) + " = " + String(iTimerMillis - iTime));
+    if (iTime > iTimerMillis) {
+         setPosAus();
+         sendUDP("Timer0");
+         bTimerAktiv=false;
+    }
+  } 
+}
+
 void resetWiFi() {
       wifiManager.resetSettings();
       delay(3000);
@@ -1337,12 +1405,13 @@ void setup() {
   server.on("/restart", restart);
   server.on("/setup", wwwSetup);
   server.on("/save", wwwSave);
-  server.on("/an", wwwan);
+  server.on("/an", wwwan); //Parameter timer=sekunden möglich
   server.on("/aus", wwwaus);
   server.on("/ran", wwwrelayan);
   server.on("/raus", wwwrelayaus);
   server.on("/anwert", wwwanwert); //Analog Wert für Anzeige auf Startsite
   server.on("/fullstatus", wwwmelde_FullStatus);
+  
   server.begin();
   Serial.println("--------------- Setup UDP --------");
   Udp.begin(localPort);
@@ -1378,6 +1447,6 @@ void loop() {
     }
     handleAnalog();
     handleudp();
-//    handleSwitch(1);
+    handleTimer();
     delay(100);
 }

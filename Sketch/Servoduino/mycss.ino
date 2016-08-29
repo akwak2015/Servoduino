@@ -4,8 +4,8 @@ String cssSwitch() {
   sReturn += ".switch {\n";
   sReturn += "  position: relative;\n";
   sReturn += "  display: inline-block;\n";
-  sReturn += "  width: 60px;\n";
-  sReturn += "  height: 34px;\n";
+  sReturn += "  width: 30px;\n";  //60
+  sReturn += "  height: 17px;\n"; //34
   sReturn += "}\n";
   
   sReturn += "/* Hide default HTML checkbox */\n";
@@ -27,10 +27,10 @@ String cssSwitch() {
   sReturn += ".slider:before {\n";
   sReturn += "  position: absolute;\n";
   sReturn += "  content: \"\";\n";
-  sReturn += "  height: 26px;\n";
-  sReturn += "  width: 26px;\n";
-  sReturn += "  left: 4px;\n";
-  sReturn += "  bottom: 4px;\n";
+  sReturn += "  height: 13px;\n";  //26
+  sReturn += "  width: 13px;\n"; //26
+  sReturn += "  left: 2px;\n"; //4
+  sReturn += "  bottom: 2px;\n"; //4
   sReturn += "  background-color: white;\n";
   sReturn += "  -webkit-transition: .4s;\n";
   sReturn += "  transition: .4s;\n";
@@ -45,14 +45,14 @@ String cssSwitch() {
   sReturn += "}\n";
   
   sReturn += "input:checked + .slider:before {\n";
-  sReturn += "  -webkit-transform: translateX(26px);\n";
-  sReturn += "  -ms-transform: translateX(26px);\n";
-  sReturn += "  transform: translateX(26px);\n";
+  sReturn += "  -webkit-transform: translateX(13px);\n"; //26
+  sReturn += "  -ms-transform: translateX(13px);\n";//26
+  sReturn += "  transform: translateX(13px);\n";//26
   sReturn += "}\n";
   
   sReturn += "/* Rounded sliders */\n";
   sReturn += ".slider.round {\n";
-  sReturn += "  border-radius: 34px;\n";
+  sReturn += "  border-radius: 17px;\n"; //34
   sReturn += "}\n";
   
   sReturn += ".slider.round:before {\n";

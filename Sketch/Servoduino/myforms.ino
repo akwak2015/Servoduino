@@ -1,11 +1,13 @@
-String htmlSwitch(String sName, int bStatus) {
+String htmlSwitch(String sName, int bStatus, String sID ="") {
   String sReturn;
   String sStatus = "";
   if (bStatus==1) {
     sStatus="checked";
   }
   sReturn = "<label class=\"switch\">";
-  sReturn += "<input type=\"checkbox\" name=\""+sName+"\" "+ sStatus +">";
+  sReturn += "<input type=\"checkbox\" name=\""+sName+"\" "+ sStatus ;
+  if (sID !="") {sReturn += " onchange = \"showhide('"+sID + "' , this.checked)\"";}
+  sReturn += ">";
   sReturn += "<div class=\"slider round\"></div>";
   sReturn += "</label>";
   return(sReturn);
@@ -101,7 +103,7 @@ void htmlresponse(String sTitel, String sInhalt) {
     sResponse += "<html lang=\"de\"><head>\n";
     sResponse += "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n";
     sResponse += "<Style type=\"text/css\">\n";
-    //sResponse += cssSwitch();
+    sResponse += cssSwitch();
     sResponse += cssForm();
     sResponse += "</style>\n";
     sResponse += htmlFunction();
@@ -167,9 +169,11 @@ void wwwSetup() {
   // -- MagnetSchalter 
   sResp += "    <TR>\n";
   sResp += "      <TD class=\"first\">\n";
-  sResp += "          <input type=\"checkbox\" name=\"MagnetSchalter\" \n";
-                        if(myConfig.bMagnetsensor==1) { sResp += "checked=\"checked\"\n";}
-                      sResp += ">\n";
+  sResp += htmlSwitch("MagnetSchalter",myConfig.bMagnetsensor,"");
+
+//  sResp += "          <input type=\"checkbox\" name=\"MagnetSchalter\" \n";
+//                        if(myConfig.bMagnetsensor==1) { sResp += "checked=\"checked\"\n";}
+//                      sResp += ">\n";
   sResp += "    </TD>\n";
   sResp += "      <TD class=\"second\">\n";
   sResp += "        Magnet Sensor vorhanden\n";
@@ -178,10 +182,7 @@ void wwwSetup() {
   // -- Schalter1   
   sResp += "  <TR>\n";
   sResp += "      <TD class=\"first\">\n";
-  sResp += "          <!-- sResp += htmlSwitch(\"SchalterWieTaster1\",myConfig.bSwitchAsPushButton[0]); -->\n";
-  sResp += "          <input type=\"checkbox\" name=\"SchalterWieTaster1\" onchange = \"showhide('swt1', this.checked)\" ";
-                        if(myConfig.bSwitchAsPushButton[0]==1) { sResp += "checked=\"checked\"\n";}
-                      sResp += ">\n";
+  sResp += htmlSwitch("SchalterWieTaster1",myConfig.bSwitchAsPushButton[0] ,"swt1");
   sResp += "    </TD>\n";
   sResp += "    <TD class=\"second\">\n";
   sResp += "        Schalter 1 wie Taster\n";
@@ -194,10 +195,7 @@ void wwwSetup() {
   // -- Schalter2 
   sResp += "  <TR>\n";
   sResp += "      <TD class=\"first\">\n";
-  sResp += "          <!-- sResp += htmlSwitch(\"SchalterWieTaster2\",myConfig.bSwitchAsPushButton[1]); -->\n";
-  sResp += "          <input type=\"checkbox\" name=\"SchalterWieTaster2\" onchange = \"showhide('swt2', this.checked)\" ";
-                        if(myConfig.bSwitchAsPushButton[1]==1) { sResp += "checked=\"checked\"\n";}
-                      sResp += ">\n";
+  sResp += htmlSwitch("SchalterWieTaster2",myConfig.bSwitchAsPushButton[1] ,"swt2");
   sResp += "    </TD>\n";
   sResp += "      <TD class=\"second\">\n";
   sResp += "        Schalter 2 wie Taster\n";
@@ -211,10 +209,7 @@ void wwwSetup() {
   // -- Taster 1
   sResp += "  <TR>\n";
   sResp += "    <TD class=\"first\">\n";
-  sResp += "       <!--htmlSwitch(\"TasterMitTimer\",myConfig.bPushButtonTimer[0]);-->\n";
-  sResp += "       <input type=\"checkbox\" name=\"TasterMitTimer1\" onchange = \"showhide('tmt1', this.checked)\" ";
-                     if(myConfig.bPushButtonTimer[0]==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
+  sResp += htmlSwitch("TasterMitTimer1",myConfig.bPushButtonTimer[0] ,"tmt1");
   sResp += "    </TD>\n";
   sResp += "    <TD class=\"second\">\n";
   sResp += "      Taster mit eigenem Timer\n";
@@ -229,10 +224,7 @@ void wwwSetup() {
   // -- Taster 2
   sResp += "  <TR>\n";
   sResp += "    <TD class=\"first\">\n";
-  sResp += "       <!--htmlSwitch(\"TasterMitTimer\",myConfig.bPushButtonTimer[0]);-->\n";
-  sResp += "       <input type=\"checkbox\" name=\"TasterMitTimer2\" onchange = \"showhide('tmt2', this.checked)\" ";
-                     if(myConfig.bPushButtonTimer[1]==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
+  sResp += htmlSwitch("TasterMitTimer2",myConfig.bPushButtonTimer[1] ,"tmt2");
   sResp += "    </TD>\n";
   sResp += "    <TD class=\"second\">\n";
   sResp += "      Taster mit eigenem Timer\n";
@@ -251,10 +243,12 @@ void wwwSetup() {
   sResp += " <div id=\"toinform\">\n";
   sResp += "  <p class=\"sys2inf\"><b>Systeme die aktualisiert werden sollen</b></p>\n";
   sResp += "  <!-- Homematic -->\n";
-  sResp += "    <input type=\"checkbox\" name=\"HM\" id=\"HM\" onchange = \"showhide('Homematic', this.checked)\" ";
-                       if(myConfig.bHomematic==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
-
+  sResp += htmlSwitch("HM",myConfig.bHomematic ,"Homematic");
+// 
+//  sResp += "    <input type=\"checkbox\" name=\"HM\" id=\"HM\" onchange = \"showhide('Homematic', this.checked)\" ";
+//                       if(myConfig.bHomematic==1) { sResp += "checked=\"checked\"\n";}
+//                        sResp += ">\n";
+//
   sResp += "    <label for=\"HM\">Homematic</label>\n";
   sResp += "    <div id=\"Homematic\" " + htmlDisplay(myConfig.bHomematic) + ">\n";
   sResp += "    <table  class=\"HM\">\n";
@@ -268,7 +262,7 @@ void wwwSetup() {
   sResp += "      </TR>\n";
   sResp += "          <TR>\n";
   sResp += "        <TD class=\"first\">\n";
-  sResp += "          CUxD Ger&auml;t (Tab):\n";
+  sResp += "          CUxD Ger&auml;t (Servo):\n";
   sResp += "        </TD>\n";
   sResp += "        <TD class=\"second\">\n";
   sResp += "          <input class=\"field\" name=\"HMGERAET\" type=\"TEXT\" value=\""+ String(myConfig.sHomematicGeraet) + "\"/>\n";
@@ -286,9 +280,11 @@ void wwwSetup() {
   sResp += "    </div>\n";
   sResp += "    <br>\n";
   sResp += "  <!-- Loxone -->\n";
-  sResp += "    <input type=\"checkbox\" name=\"Lox\" id=\"Lox\" onchange = \"showhide('Loxone', this.checked)\" ";
-                       if(myConfig.bLoxone==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
+
+    sResp += htmlSwitch("Lox",myConfig.bLoxone ,"Loxone");
+//  sResp += "    <input type=\"checkbox\" name=\"Lox\" id=\"Lox\" onchange = \"showhide('Loxone', this.checked)\" ";
+//                       if(myConfig.bLoxone==1) { sResp += "checked=\"checked\"\n";}
+//                        sResp += ">\n";
 
   sResp += "    <label for=\"Lox\">Loxone</label>\n";
   sResp += "    <div id=\"Loxone\" " + htmlDisplay(myConfig.bLoxone) + ">\n";

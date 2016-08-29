@@ -65,6 +65,7 @@ Die Pin angaben sind für den Wemos D1 Mini
 | http://ip/an?timer=Sekunden   | stellt den Servomotor in Position an für die angegebene Zeitspanne  |
 | http://ip/aus                 | stellt den Servomotor in Position aus |
 | http://ip/ran                 | Relais an                             |
+| http://ip/ran?timer=Sekunden  | Relais für Sekunden an                             |
 | http://ip/raus                | Relais aus                            |
 |                               |                                       |
 | http://ip/status              | Status des Servomotor                 |

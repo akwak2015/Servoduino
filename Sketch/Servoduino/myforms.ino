@@ -125,7 +125,7 @@ void wwwSetup() {
   sResp += "<div class=\"all\">\n";
   sResp += "<form action=\"/save\" id=\"Servoduino\"  method=\"post\" autocomplete=\"off\">\n";
   sResp += "  <p class=\"sys2inf\"><b>Servo Parameter</b></p>\n";
-  sResp += "  <table>\n";
+  sResp += "  <table class=\"fixed\">\n";
   sResp += "    <TR>\n";
   sResp += "      <TD class=\"first\">\n";
   sResp += "        An\n";
@@ -159,16 +159,18 @@ void wwwSetup() {
   // -- Analog Schwelle ---
   sResp += "    <TR>\n";
   sResp += "      <TD class=\"first\">\n";
-  sResp += "        Schwelle Analoger Eingang\n";
+  sResp += "        Schwelle Analogeingang\n";
   sResp += "      </TD>\n";
   sResp += "      <TD class=\"second\">\n";
   sResp += "        <input class=\"field\" name=\"AnalogSchwelle\" type=\"number\" min=\"0\" max=\"9999\" step=\"1\" value=\""+ String(myConfig.iAnalogSchwelle) + "\">\n";
   sResp += "      </TD>\n";
   sResp += "    </TR>\n";
+  sResp += "</table>";
 
   // -- MagnetSchalter 
+  sResp += "  <table class=\"fixed\">\n";
   sResp += "    <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
+  sResp += "      <TD class=\"firstButton\">\n";
   sResp += htmlSwitch("MagnetSchalter",myConfig.bMagnetsensor,"");
 
 //  sResp += "          <input type=\"checkbox\" name=\"MagnetSchalter\" \n";
@@ -181,7 +183,7 @@ void wwwSetup() {
   sResp += "  </TR>\n";
   // -- Schalter1   
   sResp += "  <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
+  sResp += "      <TD class=\"firstButton\">\n";
   sResp += htmlSwitch("SchalterWieTaster1",myConfig.bSwitchAsPushButton[0] ,"swt1");
   sResp += "    </TD>\n";
   sResp += "    <TD class=\"second\">\n";
@@ -194,7 +196,7 @@ void wwwSetup() {
   sResp += "  </TR>\n";
   // -- Schalter2 
   sResp += "  <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
+  sResp += "      <TD class=\"firstButton\">\n";
   sResp += htmlSwitch("SchalterWieTaster2",myConfig.bSwitchAsPushButton[1] ,"swt2");
   sResp += "    </TD>\n";
   sResp += "      <TD class=\"second\">\n";
@@ -208,11 +210,11 @@ void wwwSetup() {
   sResp += "  </TR>\n";
   // -- Taster 1
   sResp += "  <TR>\n";
-  sResp += "    <TD class=\"first\">\n";
+  sResp += "    <TD class=\"firstButton\">\n";
   sResp += htmlSwitch("TasterMitTimer1",myConfig.bPushButtonTimer[0] ,"tmt1");
   sResp += "    </TD>\n";
   sResp += "    <TD class=\"second\">\n";
-  sResp += "      Taster mit eigenem Timer\n";
+  sResp += "      Taster 1 mit eigenem Timer\n";
   sResp += "    </TD>\n";
   sResp += "      <!--if (myConfig.bPushButtonTimer[0]) {-->\n";
   sResp += "  </TR>\n";
@@ -223,11 +225,11 @@ void wwwSetup() {
   sResp += "    </TR>\n";
   // -- Taster 2
   sResp += "  <TR>\n";
-  sResp += "    <TD class=\"first\">\n";
+  sResp += "    <TD class=\"firstButton\">\n";
   sResp += htmlSwitch("TasterMitTimer2",myConfig.bPushButtonTimer[1] ,"tmt2");
   sResp += "    </TD>\n";
   sResp += "    <TD class=\"second\">\n";
-  sResp += "      Taster mit eigenem Timer\n";
+  sResp += "      Taster 2 mit eigenem Timer\n";
   sResp += "    </TD>\n";
   sResp += "      <!--if (myConfig.bPushButtonTimer[1]) {-->\n";
   sResp += "  </TR>\n";

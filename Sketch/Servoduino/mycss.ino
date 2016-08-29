@@ -87,30 +87,33 @@ String cssForm() {
   sReturn += "    clear: both;\n";
   sReturn += "    }\n";
   sReturn += "  tr.hidden {\n";
-  sReturn += "    background-color: lightyellow;\n";
+  sReturn += "    background-color: #c5c5c5;\n";
   sReturn += "    padding: 5px;\n";
-  sReturn += "    margin:5px;\n";
+  sReturn += "    margin-left:50px;\n";
+  sReturn += "    width:240px;\n";
   sReturn += "    clear: both;\n";
   sReturn += "    }\n";
   sReturn += "  table.fixed {table-layout:fixed; width:300px;}";
   sReturn += "  table.fixed td {overflow:hidden;}";
-  sReturn += "  table.fixed td:nth-of-type(1) {width:100px;}";
-  sReturn += "  table.fixed td:nth-of-type(2) {width:200px;}";
+  // sReturn += "  table.fixed td:nth-of-type(1) {width:70px;}";
+  // sReturn += "  table.fixed td:nth-of-type(2) {width:200px;}";
   sReturn += "  td.first {\n";
-  sReturn += "    width: 100px;\n";
-  sReturn += "    width: 100px;\n";  
+  sReturn += "    width: 160px;\n";
+  sReturn += "    }\n";
+  sReturn += "  td.firstButton {\n";
+  sReturn += "    width: 40px;\n";
   sReturn += "    }\n";
   sReturn += "  td.second {\n";
   sReturn += "    width: 200px;\n";
   sReturn += "    }\n";
   sReturn += "  table.HM {\n";
-  sReturn += "    background-color: lightblue;\n";
+  sReturn += "    background-color: #e0f0ff;\n";//lightblue
   sReturn += "    border-radius: 5px;\n";
   sReturn += "    padding: 5px;\n";
   sReturn += "    clear: both;\n";
   sReturn += "    }\n";
   sReturn += "  table.Loxone {\n";
-  sReturn += "    background-color: lightgreen;\n";
+  sReturn += "    background-color: #e0ffe0;\n"; //lightgreen
   sReturn += "    border-radius: 5px;\n";
   sReturn += "    padding: 5px;\n";
   sReturn += "    clear: both;\n";
@@ -136,7 +139,7 @@ String cssForm() {
   sReturn += "    font-size:75%;\n";
   sReturn += "    text-align: left;\n";
   sReturn += "    }\n";
-  sReturn += "  input.field {width:200px;}\n";
+  sReturn += "  input.field {width:150px;}\n";
 
   return sReturn;
 }

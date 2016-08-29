@@ -41,7 +41,7 @@ typedef struct oconfig oConfig;
 // *******************************************************************
 
 //Version
-//$Revision: 18 $
+//$Revision: 20 $
 String sVersionDatum = "2016-08-29";
 String sVersion = "0.8";
 

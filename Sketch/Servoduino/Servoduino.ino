@@ -74,6 +74,8 @@ int iAnaloglastMillis = millis();
 
 unsigned long iTimerMillis = millis();
 bool bTimerAktiv = false;
+unsigned long iRelayTimerMillis = millis();
+bool bRelayTimerAktiv = false;
 
 unsigned int localPort = 2390;      // local port to listen on
 char packetBuffer[255]; //buffer to hold incoming packet
@@ -88,6 +90,31 @@ Servo myservo;
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP Udp;
 
+
+// *******************************************************************
+// ****** Prototypes  ************************************************
+// *******************************************************************
+//mycss
+String cssForm();
+String cssSwitch();
+//myforms
+void htmlresponse(String sTitel, String sInhalt);
+String htmlFunction();
+String htmlSwitch(String sName, int bStatus);
+void wwwSetup();
+void wwwRoot();
+void wwwmelde_status();
+void wwwmelde_FullStatus();
+void htmlreloadpresite(String sTarget, String sText);
+void htmlresponse0(String sText);
+//myhandler
+void handlePushButton(int iPB);
+void handleSwitch(int iSW);
+void handleudp();
+void handleAnalog();
+void handleTimer();
+void handleRelayTimer();
+
 // *******************************************************************
 // ******* Programm          *****************************************
 // *******************************************************************
@@ -97,6 +124,12 @@ void setTimerSec(int iTime) {
   iTimerMillis = millis()+(1000 * iTime);
   bTimerAktiv = true;
   Serial.println("Timer aktiv: " + String(1000*iTime));
+}
+
+void setRelayTimerSec(int iTime) { 
+  iRelayTimerMillis = millis()+(1000 * iTime);
+  bRelayTimerAktiv = true;
+  Serial.println("Relay Timer aktiv: " + String(1000*iTime));
 }
 
 void saveConfig() {
@@ -195,6 +228,7 @@ void sendRelayState2Loxone() {
     int iStatus = digitalRead(iRelayPin);
     sendUDP("Relay" + String(iStatus));
 }
+
 // Rückmeldungen an Homematic
 void sendHTML(String sURL) {
   HTTPClient http;
@@ -258,63 +292,6 @@ void sendState() {
   sendRelayState();
 }
 
-void wwwmelde_status() {
-  int iErg = getOnOffStatus();
-  server.send(200, "text/plain", String(iErg));
-}
-
-void wwwmelde_FullStatus() {
-  int iErg = getStatus();
-  int iAnAusStatus = getOnOffStatus();
-  int iRelay = digitalRead(iRelayPin);
-  int sensorValue = analogRead(A0);
-  String sResp = "";
-  sResp += "<table><tr>";
-  sResp += "<td>Aktueller Status: </td>";
-  if (iAnAusStatus == 1) { sResp += "<td class=\"on\">\n";}
-  if (iAnAusStatus == 0) { sResp += "<td class=\"off\">\n";}
-  if (iAnAusStatus == -1) { sResp += "<td>\n";}
-  sResp += String(iErg) + "&deg;</td>\n";
-  
-  if (bTimerAktiv) { 
-      int iTime = round((iTimerMillis-millis())/1000);
-      sResp += "<td style=align-right;>" + String(iTime)  + "</TD>\n";  
-      }
-  
-  sResp += "</tr><tr>";
-  sResp += "<td>Aktueller Relay Status: </td>";
-  if (iRelay == 1) { sResp += "<td class=\"on\">An</td>\n";}
-  if (iRelay == 0) { sResp += "<td class=\"off\">Aus</td>\n";}
-  sResp += "</tr><tr>";
-  sResp += "<td>Analog Wert:      </td><td>" + String(sensorValue) + "</td>\n";
-  sResp += "</tr></table>";
-  server.send(200, "text/plain", sResp);
-}
-
-void htmlreloadpresite(String sTarget, String sText="") {
-    String sResponse;
-    Serial.println("htmlreload begin");
-    sResponse  = "<html><head><title>";
-    sResponse += "GoBack";
-    sResponse += "</title></head>";
-    sResponse += "<body>";
-    sResponse += "<meta http-equiv=\"refresh\" content=\"2;URL=";
-    sResponse += sTarget; 
-    sResponse += "\">";
-    sResponse += "<body>";
-    sResponse += sText;
-    sResponse += "</body></html>";
-    Serial.println("htmlreload write to client " + sTarget);
-    server.send(200, "text/html", sResponse);
-    Serial.println("htmlreload end");
-}
-
-void htmlresponse0(String sText = "") {
-    String sResponse;
-    Serial.println("htmlresponse0");
-    server.send(200, "text/plain", sText);
-    Serial.println("htmlresponse0 end");
-}
 
 void goPos() {
   if (server.arg("pos")!="") {
@@ -331,7 +308,19 @@ void goPos() {
 
 void wwwrelayan() {
   String bReload = server.arg("reload");
+  String sTimer = server.arg("timer");
+  int iTimer=0;
   digitalWrite(iRelayPin, HIGH);
+  if (sTimer!="") {
+    iTimer = sTimer.toInt();
+      if (iTimer > 0) {
+          setRelayTimerSec(iTimer);   
+      }
+  }
+  else {
+     bRelayTimerAktiv = false;
+  } 
+
   if (bReload == "1") {
     Serial.println("Zur Root Seite weiterleiten");
     htmlreloadpresite("/","AN");
@@ -347,6 +336,7 @@ void wwwrelayan() {
 void wwwrelayaus() {
   String bReload = server.arg("reload");
   digitalWrite(iRelayPin, LOW);
+  bRelayTimerAktiv = false;
   if (bReload == "1") {
     Serial.println("Zur Root Seite weiterleiten");
     htmlreloadpresite("/","AUS");
@@ -373,6 +363,10 @@ void wwwan() {
           setTimerSec(iTimer);   
       } 
   }
+  else {
+      bTimerAktiv = false;
+  }
+
   if (bReload == "1") {
     Serial.println("Zur Root Seite weiterleiten");
     htmlreloadpresite("/","AN");
@@ -409,264 +403,6 @@ void  wwwanwert() {
 }
 
 
-String htmlSwitch(String sName, int bStatus) {
-  String sReturn;
-  String sStatus = "";
-  if (bStatus==1) {
-    sStatus="checked";
-  }
-  sReturn = "<label class=\"switch\">";
-  sReturn += "<input type=\"checkbox\" name=\""+sName+"\" "+ sStatus +">";
-  sReturn += "<div class=\"slider round\"></div>";
-  sReturn += "</label>";
-  return(sReturn);
-}
-
-String cssSwitch() {
-  String sReturn;
-  sReturn = "  /* The switch - the box around the slider */\n";
-  sReturn += ".switch {\n";
-  sReturn += "  position: relative;\n";
-  sReturn += "  display: inline-block;\n";
-  sReturn += "  width: 60px;\n";
-  sReturn += "  height: 34px;\n";
-  sReturn += "}\n";
-  
-  sReturn += "/* Hide default HTML checkbox */\n";
-  sReturn += ".switch input {display:none;}\n";
-  
-  sReturn += "/* The slider */\n";
-  sReturn += ".slider {\n";
-  sReturn += "  position: absolute;\n";
-  sReturn += "  cursor: pointer;\n";
-  sReturn += "  top: 0;\n";
-  sReturn += "  left: 0;\n";
-  sReturn += "  right: 0;\n";
-  sReturn += "  bottom: 0;\n";
-  sReturn += "  background-color: #ccc;\n";
-  sReturn += "  -webkit-transition: .4s;\n";
-  sReturn += "  transition: .4s;\n";
-  sReturn += "}\n";
-  
-  sReturn += ".slider:before {\n";
-  sReturn += "  position: absolute;\n";
-  sReturn += "  content: \"\";\n";
-  sReturn += "  height: 26px;\n";
-  sReturn += "  width: 26px;\n";
-  sReturn += "  left: 4px;\n";
-  sReturn += "  bottom: 4px;\n";
-  sReturn += "  background-color: white;\n";
-  sReturn += "  -webkit-transition: .4s;\n";
-  sReturn += "  transition: .4s;\n";
-  sReturn += "}\n";
-  
-  sReturn += "input:checked + .slider {\n";
-  sReturn += "  background-color: #2196F3;\n";
-  sReturn += "}\n";
-  
-  sReturn += "input:focus + .slider {\n";
-  sReturn += "  box-shadow: 0 0 1px #2196F3;\n";
-  sReturn += "}\n";
-  
-  sReturn += "input:checked + .slider:before {\n";
-  sReturn += "  -webkit-transform: translateX(26px);\n";
-  sReturn += "  -ms-transform: translateX(26px);\n";
-  sReturn += "  transform: translateX(26px);\n";
-  sReturn += "}\n";
-  
-  sReturn += "/* Rounded sliders */\n";
-  sReturn += ".slider.round {\n";
-  sReturn += "  border-radius: 34px;\n";
-  sReturn += "}\n";
-  
-  sReturn += ".slider.round:before {\n";
-  sReturn += "  border-radius: 50%;\n";
-  sReturn += "}\n";
-
-  sReturn += "P { text-align: center }";
-
-  
-  return(sReturn);
-}
-
-
-String cssForm() {
-  String sReturn = "";
-  sReturn += "  H1 {\n";
-  sReturn += "    background-color: lightgray;\n";
-  sReturn += "    border-radius: 5px;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    clear: both;\n";
-  sReturn += "    width: 350px;\n";
-  sReturn += "    }\n";
-  sReturn += "  table {\n";
-  sReturn += "    border-radius: 5px;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    clear: both;\n";
-  sReturn += "    }\n";
-  sReturn += "  table.gray {\n";
-  sReturn += "    background-color: lightgray;\n";
-  sReturn += "    border-radius: 5px;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    clear: both;\n";
-  sReturn += "    }\n";
-  sReturn += "  tr.hidden {\n";
-  sReturn += "    background-color: lightyellow;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    margin:5px;\n";
-  sReturn += "    clear: both;\n";
-  sReturn += "    }\n";
-  sReturn += "  table.fixed {table-layout:fixed; width:300px;}";
-  sReturn += "  table.fixed td {overflow:hidden;}";
-  sReturn += "  table.fixed td:nth-of-type(1) {width:100px;}";
-  sReturn += "  table.fixed td:nth-of-type(2) {width:200px;}";
-  sReturn += "  td.first {\n";
-  sReturn += "    width: 100px;\n";
-  sReturn += "    width: 100px;\n";  
-  sReturn += "    }\n";
-  sReturn += "  td.second {\n";
-  sReturn += "    width: 200px;\n";
-  sReturn += "    }\n";
-  sReturn += "  table.HM {\n";
-  sReturn += "    background-color: lightblue;\n";
-  sReturn += "    border-radius: 5px;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    clear: both;\n";
-  sReturn += "    }\n";
-  sReturn += "  table.Loxone {\n";
-  sReturn += "    background-color: lightgreen;\n";
-  sReturn += "    border-radius: 5px;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    clear: both;\n";
-  sReturn += "    }\n";
-  sReturn += "  td.on {background-color: lightgreen;}\n";
-  sReturn += "  td.off {background-color: #ff8080;}\n";
-  sReturn += "  p.sys2inf {\n";
-  sReturn += "    border-style: none none solid none;\n";
-  sReturn += "    border-width: 1px;\n";
-  sReturn += "    border-color: lightyellow;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    width: 80%\n";
-  sReturn += "    }\n";
-  sReturn += "  div.all {\n";
-  sReturn += "    background-color: lightgrey;\n";
-  sReturn += "    border-radius: 5px;\n";
-  sReturn += "    width: 350px;\n";
-  sReturn += "    padding: 5px;\n";
-  sReturn += "    clear: both;\n";
-  sReturn += "    }\n";
-  sReturn += "  p.small {";
-  sReturn += "    font-size:75%;\n";
-  sReturn += "    text-align: left;\n";
-  sReturn += "    }\n";
-  sReturn += "  input.field {width:200px;}\n";
-
-  return sReturn;
-}
-
-String htmlFunction() {
-  String sReturn ="\n";
-  sReturn += "<script type=\"text/javascript\">\n";
-  sReturn += "function toggle(control){\n";
-  sReturn += "    var elem = document.getElementById(control);\n";
-  sReturn += "\n";
-  sReturn += "    if(elem.style.display == \"none\"){\n";
-  sReturn += "        elem.style.display = \"inline-block\";\n";
-  sReturn += "    }else{\n";
-  sReturn += "        elem.style.display = \"none\";\n";
-  sReturn += "    }\n";
-  sReturn += "}\n";
-
-  sReturn += "function showhide(control, val){\n";
-  sReturn += "  var elem = document.getElementById(control);\n";
-  sReturn += "  if(val){\n";
-  sReturn += "    elem.style.display = \"inline-block\"\n";
-  sReturn += "  }else{\n";
-  sReturn += "    elem.style.display = \"none\";\n";
-  sReturn += "  }\n";
-  sReturn += "}\n";  
-  sReturn += "</script>\n";
-
-  sReturn += "<script type=\"text/javascript\">\n";
-  sReturn += "var xmlHttpObject = false;\n";
-  sReturn += "// Überprüfen ob XMLHttpRequest-Klasse vorhanden und erzeugen von Objekte für IE7, Firefox, etc.\n";
-  sReturn += "if (typeof XMLHttpRequest != 'undefined') \n";
-  sReturn += "{\n";
-  sReturn += "    xmlHttpObject = new XMLHttpRequest();\n";
-  sReturn += "}\n";
-  sReturn += "";
-  sReturn += "// Wenn im oberen Block noch kein Objekt erzeugt, dann versuche XMLHTTP-Objekt zu erzeugen\n";
-  sReturn += "// Notwendig für IE6 oder IE5\n";
-  sReturn += "if (!xmlHttpObject) \n";
-  sReturn += "{\n";
-  sReturn += "    try \n";
-  sReturn += "    {\n";
-  sReturn += "        xmlHttpObject = new ActiveXObject(\"Msxml2.XMLHTTP\");\n";
-  sReturn += "    }\n";
-  sReturn += "    catch(e) \n";
-  sReturn += "    {\n";
-  sReturn += "        try \n";
-  sReturn += "        {\n";
-  sReturn += "            xmlHttpObject = new ActiveXObject(\"Microsoft.XMLHTTP\");\n";
-  sReturn += "        }\n";
-  sReturn += "        catch(e) \n";
-  sReturn += "        {\n";
-  sReturn += "            xmlHttpObject = null;\n";
-  sReturn += "        }\n";
-  sReturn += "    }\n";
-  sReturn += "}</script>\n";
-
-  sReturn += "<script type=\"text/javascript\">\n";
-  sReturn += "function sndReq()\n";
-  sReturn += "{\n";   
-  sReturn += "xmlHttpObject.open('get', '/anwert', true);\n";
-  sReturn += "xmlHttpObject.send();";
-  sReturn += "  xmlHttpObject.onreadystatechange = function () {\n";
-  sReturn += "    if(xmlHttpObject.readyState == 4)\n";
-  sReturn += "    {\n";
-  sReturn += "      document.getElementById('divAnWert').innerHTML = xmlHttpObject.responseText\n";
-  sReturn += "    }\n";
-  sReturn += "  }\n";
-  sReturn += "  http.send(null);\n";
-  sReturn += "}\n";
-  sReturn += "</script>  \n";
-
-  sReturn += "<script type=\"text/javascript\">\n";
-  sReturn += "function sndReqFull()\n";
-  sReturn += "{\n";   
-  sReturn += "xmlHttpObject.open('get', '/fullstatus', true);\n";
-  sReturn += "xmlHttpObject.send();\n";
-  sReturn += "  xmlHttpObject.onreadystatechange = function () {\n";
-  sReturn += "    if(xmlHttpObject.readyState == 4)\n";
-  sReturn += "    {\n";
-  sReturn += "      document.getElementById('divFull').innerHTML = xmlHttpObject.responseText\n";
-  sReturn += "    }\n";
-  sReturn += "  }\n";
-//  sReturn += "  http.send(null);\n";
-  sReturn += "}\n";
-  sReturn += "</script>  \n";
-  return sReturn;
-}
-void htmlresponse(String sTitel, String sInhalt) {
-    String sResponse;
-    Serial.println("htmlresponse begin");
-    sResponse  = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n";
-    sResponse += "<html lang=\"de\"><head>\n";
-    sResponse += "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n";
-    sResponse += "<Style type=\"text/css\">\n";
-//  sResponse += cssSwitch();
-    sResponse += cssForm();
-    sResponse += "</style>\n";
-    sResponse += htmlFunction();
-    sResponse += "<title>\n";
-    sResponse += sTitel;
-    sResponse += "</title></head><body>\n";
-    sResponse += sInhalt;
-    sResponse += "</body></html>\n";
-    Serial.println("htmlresponse write to client");
-    server.send(200, "text/html", sResponse);
-    Serial.println("htmlresponse end");
-}
 
 String htmlDisplay(int iState) {
   String sRet = "";
@@ -679,213 +415,6 @@ String htmlDisplay(int iState) {
   return sRet;
 }
 
-void wwwSetup() {
-  Serial.println("wwwrSetup begin");
-
-  String sResp="";
-  sResp += "<h1>Setup Page</h1>\n";
-  sResp += "<div class=\"all\">\n";
-  sResp += "<form action=\"/save\" id=\"Servoduino\"  method=\"post\" autocomplete=\"off\">\n";
-  sResp += "  <p class=\"sys2inf\"><b>Servo Parameter</b></p>\n";
-  sResp += "  <table>\n";
-  sResp += "    <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
-  sResp += "        An\n";
-  sResp += "      </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        <input class=\"field\" name=\"an\" type=\"number\" min=\"0\" max=\"180\" step=\"5\" value=\""+ String(myConfig.iAn) + "\">\n";
-  sResp += "      </TD>\n";
-  sResp += "    </TR>\n";
-  sResp += "    <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
-  sResp += "        Aus\n";
-  sResp += "      </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        <input class=\"field\" name=\"aus\" type=\"number\" min=\"0\" max=\"180\" step=\"5\" value=\""+ String(myConfig.iAus) + "\">\n";
-  sResp += "      </TD>\n";
-  sResp += "    </TR>\n";
-  sResp += "    <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
-  sResp += "        Korrektur\n";
-  sResp += "      </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        <input class=\"field\" name=\"korrektur\" type=\"number\" min=\"-90\" max=\"90\" step=\"5\" value=\""+ String(myConfig.iKorrektur) + "\">\n";
-  sResp += "      </TD>\n";
-  sResp += "    </TR>\n";
-  sResp += "  </Table>\n";
-  sResp += "\n";
-
-// -----------------------
-  sResp += "  <p class=\"sys2inf\"><b>Hardware Parameter</b></p>\n";
-  sResp += "  <table class=\"fixed\">\n";
-  // -- Analog Schwelle ---
-  sResp += "    <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
-  sResp += "        Schwelle Analoger Eingang\n";
-  sResp += "      </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        <input class=\"field\" name=\"AnalogSchwelle\" type=\"number\" min=\"0\" max=\"9999\" step=\"1\" value=\""+ String(myConfig.iAnalogSchwelle) + "\">\n";
-  sResp += "      </TD>\n";
-  sResp += "    </TR>\n";
-
-  // -- MagnetSchalter 
-  sResp += "    <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
-  sResp += "          <input type=\"checkbox\" name=\"MagnetSchalter\"\n";
-                        if(myConfig.bMagnetsensor==1) { sResp += "checked=\"checked\"\n";}
-                      sResp += ">\n";
-  sResp += "    </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        Magnet Sensor vorhanden\n";
-  sResp += "      </TD>\n";
-  sResp += "  </TR>\n";
-  // -- Schalter1   
-  sResp += "  <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
-  sResp += "          <!-- sResp += htmlSwitch(\"SchalterWieTaster1\",myConfig.bSwitchAsPushButton[0]); -->\n";
-  sResp += "          <input type=\"checkbox\" name=\"SchalterWieTaster1\" onchange = \"showhide('swt1', this.checked)\" ";
-                        if(myConfig.bSwitchAsPushButton[0]==1) { sResp += "checked=\"checked\"\n";}
-                      sResp += ">\n";
-  sResp += "    </TD>\n";
-  sResp += "    <TD class=\"second\">\n";
-  sResp += "        Schalter 1 wie Taster\n";
-  sResp += "    </TD>\n";
-  sResp += "  </TR>\n";
-  sResp += "  <TR id=\"swt1\" class=\"hidden\" " + htmlDisplay(myConfig.bSwitchAsPushButton[0]) + ">\n";
-  sResp += "    <TD class=\"first\">Schaltzeit: </TD>\n";
-  sResp += "    <TD class=\"second\"><input class=\"field\" name=\"SchalterTime1\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iSwitchTimer[0]) +  "\"/></TD>\n";
-  sResp += "  </TR>\n";
-  // -- Schalter2 
-  sResp += "  <TR>\n";
-  sResp += "      <TD class=\"first\">\n";
-  sResp += "          <!-- sResp += htmlSwitch(\"SchalterWieTaster2\",myConfig.bSwitchAsPushButton[1]); -->\n";
-  sResp += "          <input type=\"checkbox\" name=\"SchalterWieTaster2\" onchange = \"showhide('swt2', this.checked)\" ";
-                        if(myConfig.bSwitchAsPushButton[1]==1) { sResp += "checked=\"checked\"\n";}
-                      sResp += ">\n";
-  sResp += "    </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        Schalter 2 wie Taster\n";
-  sResp += "      </TD>\n";
-  sResp += "        <!-- if (myConfig.bSwitchAsPushButton) { -->\n";
-  sResp += "  </TR>\n";
-  sResp += "  <TR id=\"swt2\" class=\"hidden\" " + htmlDisplay(myConfig.bSwitchAsPushButton[1]) + ">\n";
-  sResp += "    <TD class=\"first\">Schaltzeit: </TD>\n";
-  sResp += "    <TD class=\"second\"><input class=\"field\" name=\"SchalterTime2\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iSwitchTimer[1]) +  "\"/></TD>\n";
-  sResp += "  </TR>\n";
-  // -- Taster 1
-  sResp += "  <TR>\n";
-  sResp += "    <TD class=\"first\">\n";
-  sResp += "       <!--htmlSwitch(\"TasterMitTimer\",myConfig.bPushButtonTimer[0]);-->\n";
-  sResp += "       <input type=\"checkbox\" name=\"TasterMitTimer1\" onchange = \"showhide('tmt1', this.checked)\" ";
-                     if(myConfig.bPushButtonTimer[0]==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
-  sResp += "    </TD>\n";
-  sResp += "    <TD class=\"second\">\n";
-  sResp += "      Taster mit eigenem Timer\n";
-  sResp += "    </TD>\n";
-  sResp += "      <!--if (myConfig.bPushButtonTimer[0]) {-->\n";
-  sResp += "  </TR>\n";
-  sResp += "  <TR id=\"tmt1\" class=\"hidden\" " + htmlDisplay(myConfig.bPushButtonTimer[0]) + ">\n";
-  sResp += "    <TD class=\"first\">Schaltzeit: </TD>\n";
-  sResp += "    <TD class=\"second\"><input class=\"field\" name=\"TasterTime1\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iPushButtonTimer[0]) + "\"/></TD>\n";
-  sResp += "        <!--}-->\n";
-  sResp += "    </TR>\n";
-  // -- Taster 2
-  sResp += "  <TR>\n";
-  sResp += "    <TD class=\"first\">\n";
-  sResp += "       <!--htmlSwitch(\"TasterMitTimer\",myConfig.bPushButtonTimer[0]);-->\n";
-  sResp += "       <input type=\"checkbox\" name=\"TasterMitTimer2\" onchange = \"showhide('tmt2', this.checked)\" ";
-                     if(myConfig.bPushButtonTimer[1]==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
-  sResp += "    </TD>\n";
-  sResp += "    <TD class=\"second\">\n";
-  sResp += "      Taster mit eigenem Timer\n";
-  sResp += "    </TD>\n";
-  sResp += "      <!--if (myConfig.bPushButtonTimer[1]) {-->\n";
-  sResp += "  </TR>\n";
-  sResp += "  <TR id=\"tmt2\" class=\"hidden\" " + htmlDisplay(myConfig.bPushButtonTimer[1]) + ">\n";
-  sResp += "    <TD class=\"first\">Schaltzeit: </TD>\n";
-  sResp += "    <TD class=\"second\"><input class=\"field\" name=\"TasterTime2\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iPushButtonTimer[1]) + "\"/></TD>\n";
-  sResp += "        <!--}-->\n";
-  sResp += "    </TR>\n";
-
-  sResp += "  </table>\n";
-  sResp += "\n";
-// ---------------------------
-  sResp += " <div id=\"toinform\">\n";
-  sResp += "  <p class=\"sys2inf\"><b>Systeme die aktualisiert werden sollen</b></p>\n";
-  sResp += "  <!-- Homematic -->\n";
-  sResp += "    <input type=\"checkbox\" name=\"HM\" id=\"HM\" onchange = \"showhide('Homematic', this.checked)\" ";
-                       if(myConfig.bHomematic==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
-
-  sResp += "    <label for=\"HM\">Homematic</label>\n";
-  sResp += "    <div id=\"Homematic\" " + htmlDisplay(myConfig.bHomematic) + ">\n";
-  sResp += "    <table  class=\"HM\">\n";
-  sResp += "      <TR>\n";
-  sResp += "        <TD class=\"first\">\n";
-  sResp += "          IP Adresse:\n";
-  sResp += "        </TD>\n";
-  sResp += "        <TD class=\"second\">\n";
-  sResp += "          <input class=\"field\" name=\"HMIP\" type=\"TEXT\" value=\""+ String(myConfig.sHomematicIP) + "\"/>\n";
-  sResp += "        </TD>\n";
-  sResp += "      </TR>\n";
-  sResp += "          <TR>\n";
-  sResp += "        <TD class=\"first\">\n";
-  sResp += "          CUxD Ger&auml;t (Tab):\n";
-  sResp += "        </TD>\n";
-  sResp += "        <TD class=\"second\">\n";
-  sResp += "          <input class=\"field\" name=\"HMGERAET\" type=\"TEXT\" value=\""+ String(myConfig.sHomematicGeraet) + "\"/>\n";
-  sResp += "        </TD>\n";
-  sResp += "      </TR>\n";
-  sResp += "      <TR>\n";
-  sResp += "        <TD class=\"first\">\n";
-  sResp += "          CUxD Ger&auml;t (Relay):\n";
-  sResp += "        </TD>\n";
-  sResp += "        <TD class=\"second\">\n";
-  sResp += "          <input class=\"field\" name=\"HMGERAETRELAY\" type=\"TEXT\" value=\""+ String(myConfig.sHomematicGeraetRelay) + "\"/>\n";
-  sResp += "        </TD>\n";
-  sResp += "      </TR>\n";
-  sResp += "    </table>\n";
-  sResp += "    </div>\n";
-  sResp += "    <br>\n";
-  sResp += "  <!-- Loxone -->\n";
-  sResp += "    <input type=\"checkbox\" name=\"Lox\" id=\"Lox\" onchange = \"showhide('Loxone', this.checked)\" ";
-                       if(myConfig.bLoxone==1) { sResp += "checked=\"checked\"\n";}
-                        sResp += ">\n";
-
-  sResp += "    <label for=\"Lox\">Loxone</label>\n";
-  sResp += "    <div id=\"Loxone\" " + htmlDisplay(myConfig.bLoxone) + ">\n";
-  sResp += "    <table  class=\"Loxone\">\n";
-  sResp += "      <TR>\n";
-  sResp += "        <TD class=\"first\">\n";
-  sResp += "          IP Adresse:\n";
-  sResp += "        </TD>\n";
-  sResp += "        <TD class=\"second\">\n";
-  sResp += "          <input class=\"field\" name=\"LoxIP\" type=\"TEXT\" value=\""+ String(myConfig.sLoxoneIP) + "\"/>\n";
-  sResp += "        </TD>\n";
-  sResp += "      </TR>\n";
-  sResp += "          <TR>\n";
-  sResp += "        <TD class=\"first\">\n";
-  sResp += "          UDP Port:\n";
-  sResp += "        </TD>\n";
-  sResp += "        <TD class=\"second\">\n";
-  sResp += "          <input class=\"field\" name=\"LoxPort\" type=\"number\" min=\"0\" max=\"99999\" step=\"1\" value=\""+ String(myConfig.sLoxonePort) + "\"/>\n";
-  sResp += "        </TD>\n";
-  sResp += "      </TR>\n";
-  sResp += "    </table>\n";
-  sResp += "  </div>\n";
-  sResp += "  </div>\n";
-  sResp += "\n";
-  sResp += "  <div style =\"padding-top: 30px;position: relative;\">\n";
-  sResp += "  <button type=\"submit\" name =\"action\" style =\"position: absolute;right: 10px;top: 5px;\"> Absenden </button>\n";
-  sResp += "  </div>\n";
-  sResp += "</form>\n";
-  sResp += "</div>\n";
-  sResp += "<br><a href='/'><button type='button'>Startseite</BUTTON></a> \n";
-  htmlresponse("Setup", sResp);
-  Serial.println("wwwrSetup end");
-}
 
 void wwwSave() {
   String sAn = server.arg("an");
@@ -1044,36 +573,6 @@ void wwwSave() {
  
 }
 
-void wwwRoot() {
-  Serial.println("wwwrRoot begin");
-
-  String sResp;
-  sResp = "<script type=\"text/javascript\" language=\"JavaScript\">";
-//  sResp +="   setInterval(sndReq, 500);";
-  sResp +="   setInterval(sndReqFull, 1000);";
-  sResp +="</script>\n";
-  sResp += "<h1>Servo Steuerung</h1>\n";
-  sResp += "<p class=\"small\">Version: " + sVersion + "<br> vom " + sVersionDatum + " </p>\n";
-//  sResp += "Aktueller Status: <div id=\"divGrad\" name=\"divGrad\" style=\"display: inline-block;\">" + String(getStatus())+"</div><br>\n";
-//  sResp += "Analog Wert:      <div id=\"divAnWert\" name=\"divAnWert\" style=\"display: inline-block;\">0</div>\n";
-  sResp += "<div id=\"divFull\" name=\"divFull\">Status wird geladen....</div>\n";
-  sResp += "<hr>\n";
-  sResp += "<table>";
-  sResp += "<tr><td>Tablet : </td><td><a href=\"/an?reload=1\"><button type='button'>An</button></a></td>\n";
-  sResp += "<td><a href=\"/aus?reload=1\"><button type='button'>Aus</button></a></td></tr>\n";
-  sResp += "<tr><td>Relay : </td><td><a href=\"/ran?reload=1\"><button type='button'>An</button></a></td>\n";
-  sResp += "<td><a href=\"/raus?reload=1\"><button type='button'>Aus</button></a></td></tr>\n";
-  sResp += "</table>";
-  sResp += "<hr>\n";
-  sResp += "<a href=\"/setup\"><button type='button'>Konfiguration</button></a><br>\n";
-  sResp += "<a href=\"/firmware\"><button type='button'>Update Firmware</button></a><br>\n";
-  sResp += "\n";
-  sResp += "\n";
-  sResp += "\n";
-
-  htmlresponse("Servo", sResp);
-  Serial.println("wwwrRoot end");
-}
 
 void printConfig() {
  Serial.println("Valid1 (1234): " + String(myConfig.bValidConfig1));
@@ -1174,139 +673,6 @@ void toggle() {
     } 
 }
 
-void handlePushButton(int iPB) {
-    unsigned long currentMillis = millis();
-    // Entprellen 
-    if ((currentMillis - tPushButtonLast[iPB]) > 500) {
-        //Serial.printf("Handle Pushbutton - Current: %i, Last: %i, Diff: %i", currentMillis, tPushButtonLast[iPB], (currentMillis - tPushButtonLast[iPB]));
-        //Serial.println("");
-        int iPushButtonState = digitalRead(iPushButtonPin[iPB]);
-        if ((iPushButtonState == 1) and iPushButtonState != iPushButtonLastState[iPB]) {
-            if (myConfig.bPushButtonTimer[iPB]) {
-              setTimerSec(myConfig.iPushButtonTimer[iPB]);
-              setPosAn();
-            }
-            else {
-              toggle();
-              bTimerAktiv=false; //Wenn manuell an oder ausgeschaltet, dann brauchen wir keinen Timer mehr
-            }
-            iPushButtonLastState[iPB] = iPushButtonState;
-            tPushButtonLast[iPB]=currentMillis;
-            sendUDP("Taster[" + String(iPB) + "]1");
-        }
-        // Status Losgelassen merken und an Geräte übermitteln
-        else if ((iPushButtonState == 0) and iPushButtonState != iPushButtonLastState[iPB]) {
-            iPushButtonLastState[iPB] = iPushButtonState;
-            sendUDP("Taster[" + String(iPB) + "]0");
-            }
-    }
-}
-void handleSwitch(int iSW){
-    unsigned long currentMillis = millis();
-    int iSwitchState = digitalRead(iSwitchPin[iSW]);  
-    if (iSwitchState != iSwitchLastState[iSW]) {
-        //Switch on
-        if (iSwitchState == 1) {
-            if (myConfig.bSwitchAsPushButton[iSW]) {
-              setTimerSec(myConfig.iSwitchTimer[iSW]);
-            }
-            else {
-              bTimerAktiv=false; //Wenn manuell an oder ausgeschaltet, dann brauchen wir keinen Timer mehr
-            }
-            setPosAn();
-            sendUDP("Schalter[" + String(iSW) + "]1");
-         } 
-         //Switch off
-         if (iSwitchState == 0) {
-                if (myConfig.bSwitchAsPushButton[iSW]) {
-                  Serial.println("Switch turns off in Timermode... nothinmg to do");
-                }
-                else {
-                  setPosAus();
-                  bTimerAktiv=false; //Wenn manuell an oder ausgeschaltet, dann brauchen wir keinen Timer mehr
-                }
-                sendUDP("Schalter[" + String(iSW) + "]0");
-         }
-         iSwitchLastState[iSW] = iSwitchState; 
-         tSwitchLast[iSW]=currentMillis;
-      }
-}
-bool charcomp(char* cbuf, String scmp) {
-      bool bErg = true;
-      for (int i = 0; i<sizeof(cbuf) ;i++) {
-        if (int(cbuf[i])!=10) {
-            //Serial.println(String (i)+ ": "+scmp[i] + " = " + int(cbuf[i]));
-            bErg = bErg and (scmp[i]==cbuf[i]);  
-        }
-      }
-      Serial.println (String (cbuf) + " = " +scmp + " : " +bErg);
-      
-      return bErg;        
-}
-
-void handleudp(){
-    int packetSize = Udp.parsePacket();
-    if (packetSize) {
-        Serial.print("Received packet of size ");
-        Serial.println(packetSize);
-        Serial.print("From ");
-        IPAddress remoteIp = Udp.remoteIP();
-        Serial.print(remoteIp);
-        Serial.print(", port ");
-        Serial.println(Udp.remotePort());
-    
-        // read the packet into packetBufffer
-        int len = Udp.read(packetBuffer, 255);
-        if (len > 0) {
-          packetBuffer[len] = 0;
-        }
- 
-    Serial.println("Contents:");
-    Serial.println(packetBuffer);
-    char ReplyBufferState[]="5";
-   //Funktionalität.....
-   
-    if (charcomp(packetBuffer,"an")) {
-         Serial.println("UDP An");
-         setPosAn();
-         ReplyBufferState[0]='1';
-    }
-    if (charcomp(packetBuffer,"aus")) {
-         Serial.println("UDP Aus");
-         setPosAus();
-         ReplyBufferState[0]='0';
-    }
-    if (charcomp(packetBuffer,"status")) {
-         int iStatus = getOnOffStatus();
-         ReplyBufferState[0]=String(iStatus).charAt(1);
-    }
-    if (charcomp(packetBuffer,"ran")) {
-         Serial.println("UDP Relay An");
-         wwwrelayan();
-         ReplyBufferState[0]='1';
-    }
-    if (charcomp(packetBuffer,"raus")) {
-         Serial.println("UDP Relay Aus");
-         wwwrelayaus();
-         ReplyBufferState[0]='0';
-    }
-    if (charcomp(packetBuffer,"rstatus")) {
-         Serial.println("UDP Relay Status");
-         if (digitalRead(iRelayPin)==1){
-              ReplyBufferState[0]='1';
-         }
-        if (digitalRead(iRelayPin)==0) {
-              ReplyBufferState[0]='0';
-         }
-    }
-
-      
-    // send a reply, to the IP address and port that sent us the packet we received
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(ReplyBufferState);
-    Udp.endPacket();
-    }
-}
 
 String IpAddress2String(const IPAddress& ipAddress)
 {
@@ -1316,39 +682,6 @@ String IpAddress2String(const IPAddress& ipAddress)
   String(ipAddress[3])  ; 
 }
 
-void handleAnalog() {
-  int iSensorValue = analogRead(A0);
-  unsigned long currentMillis = millis();
-  if  (currentMillis < iAnaloglastMillis + 1000) { return ;} // Statuswechsel innerhalb 1 Sekunden ignorieren
-  //Serial.println(String(iSensorValue) + ":" + String(myConfig.iAnalogSchwelle)); 
-  if (iSensorValue > myConfig.iAnalogSchwelle) {
-      if (iAnalogLastState==0){
-         setPosAn();
-         sendUDP("Analog1");
-         iAnalogLastState = 1;
-      }
-  } 
-  else {
-      if (iAnalogLastState==1){
-          setPosAus();
-          sendUDP("Analog0");
-          iAnalogLastState = 0;
-      }
-  }
-  iAnaloglastMillis = currentMillis ; 
-}
-
-void handleTimer(){
-  if (bTimerAktiv) {
-    int iTime=millis();
-    //Serial.println(String(iTimerMillis) + " - " + String(iTime) + " = " + String(iTimerMillis - iTime));
-    if (iTime > iTimerMillis) {
-         setPosAus();
-         sendUDP("Timer0");
-         bTimerAktiv=false;
-    }
-  } 
-}
 
 void resetWiFi() {
       wifiManager.resetSettings();
@@ -1378,10 +711,26 @@ void restart() {
 
 void setup() {
   // put your setup code here, to run once:
-  wifiManager.autoConnect("Servoduino","Servoduino");
-  // put your setup code here, to run once:
   Serial.begin(115200); 
   Serial.println("--------------- Setup -------------");
+
+  Serial.println("--------------- Setup Parameter laden -------------");
+  Serial.println("Default: ");
+  printConfig();
+  // Config aus eeprom lesen
+  getConfig();
+  Serial.println("eeprom: ");
+  printConfig();
+  int iStatus = myConfig.iAus;
+
+  Serial.println("--------------- Starting WifiManager -------------");
+
+  if (!wifiManager.autoConnect("Servoduino","Servoduino")) {
+     Serial.println("failed to connect, we should reset as see if it connects"); 
+     delay(3000); 
+     ESP.reset(); 
+     delay(5000); 
+  }
   Serial.println("--------------- Setup get Wifi -------------");
   IPAddress ip = WiFi.localIP();
   String sSSID = WiFi.SSID();
@@ -1415,14 +764,6 @@ void setup() {
   server.begin();
   Serial.println("--------------- Setup UDP --------");
   Udp.begin(localPort);
-  Serial.println("--------------- Setup Parameter laden -------------");
-  Serial.println("Default: ");
-  printConfig();
-  // Config aus eeprom lesen
-  getConfig();
-  Serial.println("eeprom: ");
-  printConfig();
-  int iStatus = myConfig.iAus;
   
   Serial.println("--------------- Setup Servo -------------");
   myservo.attach(iServoPin); 
@@ -1448,5 +789,6 @@ void loop() {
     handleAnalog();
     handleudp();
     handleTimer();
+    handleRelayTimer();
     delay(100);
 }

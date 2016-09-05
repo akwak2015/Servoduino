@@ -41,9 +41,9 @@ typedef struct oconfig oConfig;
 // *******************************************************************
 
 //Version
-//$Revision: 20 $
-String sVersionDatum = "2016-08-29";
-String sVersion = "0.8";
+//$Revision: 21 $
+String sVersionDatum = "2016-09-05";
+String sVersion = "0.8.1";
 
 oConfig myConfig = {1234, 4321, 2, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000"};
 
@@ -55,6 +55,8 @@ int iRelayPin = 5; //Wemos mini D1 -> RelayBoard
 int iMagnetsensorPin = 4; //Wemos mini D2 - MagnetSensor
 // Analog Pin auf Wemos A0 => int sensorValue = analogRead(A0); 
 
+// Aktueller Servo Status
+int iServoPosAkt = -1;
 
 // OTA
 const char* update_path = "/firmware";
@@ -63,9 +65,9 @@ const char* update_password = "admin";
 
 int iUeber = 0; //notwendiger "negatiever" Korrekturfaktor fue den Bereich ueber 180-iKorrektur.
 
-int iPushButtonLastState[] = { 2, 2 };
+int iPushButtonLastState[] = { 0, 0 };
 unsigned long tPushButtonLast[2]; //letzter Tastendruck
-int iSwitchLastState[] = { 2, 2 };
+int iSwitchLastState[] = { 0, 0 };
 unsigned long tSwitchLast[2]; //letzte Schalterbetätigung
 
 int iAnalogLastState = 0;
@@ -113,10 +115,39 @@ void handleudp();
 void handleAnalog();
 void handleTimer();
 void handleRelayTimer();
+//Main
+int getServo (bool bForcePinRead = false);
+int getOnOffStatus(bool bForcePinRead = false);
+int getStatus(bool bForcePinRead = false);
 
 // *******************************************************************
 // ******* Programm          *****************************************
 // *******************************************************************
+
+void setServo(int iPos) {
+  myservo.attach(iServoPin); 
+  delay(20);
+  myservo.write(iPos);
+  iServoPosAkt = iPos;
+  delay(500);
+  myservo.detach(); 
+}
+
+int getServo (bool bForcePinRead) {
+  int iErg=0;
+  if (bForcePinRead) {Serial.println("Force " + bForcePinRead);}
+  if ((iServoPosAkt == -1) or (bForcePinRead)) {
+    myservo.attach(iServoPin); 
+    delay(500);
+    iErg = myservo.read();
+    delay(500);
+    myservo.detach(); 
+  }
+  else {
+    iErg=iServoPosAkt;
+  }
+  return iErg;
+}
 
 // Timer in Sekunden
 void setTimerSec(int iTime) { 
@@ -158,25 +189,26 @@ int getKorrigiert (int iGrad) {
   return iErg;
 }
 
-int getStatus() {
-  int iErg = myservo.read();
+int getStatus(bool bForcePinRead) {
+  int iErg = getServo(bForcePinRead);
   iErg=iErg - myConfig.iKorrektur;
   if (iErg > 180) iErg=180;
   if (iErg < 0) iErg=0;
-  //Serial.println("getKorrigiert - ServoPos: " + String( myservo.read()) + " Rueckgabe: "+ String(iErg));
+  //Serial.println("getKorrigiert - ServoPos: " + String( getServo()) + " Rueckgabe: "+ String(iErg));
   return iErg+iUeber;
 }
 
-int getOnOffStatus() {
+int getOnOffStatus(bool bForcePinRead) {
     int iErg=-1;
     if (myConfig.bMagnetsensor==1) {
+    delay(500);
     if (digitalRead(iMagnetsensorPin) == HIGH) {
       iErg=1;
     } else {
       iErg=0;
     }
   } else {    
-    int iStatus = getStatus();
+    int iStatus = getStatus(bForcePinRead);
     if (iStatus == myConfig.iAn) iErg=1; 
     if (iStatus == myConfig.iAus) iErg=0; 
   }
@@ -300,7 +332,7 @@ void goPos() {
   if (iStatus<0) { iStatus = 0; }
   if (iStatus>360) { iStatus = 360; }
    
-  myservo.write(getKorrigiert(iStatus));
+  setServo(getKorrigiert(iStatus));
   htmlresponse0(String(getStatus()));
   }
 }
@@ -355,10 +387,10 @@ void wwwan() {
   Serial.println("Reload? = " + bReload);
   Serial.println("Timer? = " + sTimer);
   int iStatus=myConfig.iAn;
-  myservo.write(getKorrigiert(iStatus));
+  setServo(getKorrigiert(iStatus));
   if (sTimer!="") {
     iTimer = sTimer.toInt();
-      if (iTimer > 2) {
+      if (iTimer > 0) {
           setTimerSec(iTimer);   
       } 
   }
@@ -382,7 +414,7 @@ void wwwaus() {
   String bReload = server.arg("reload");
   Serial.println("Reload? = " + bReload);
   int iStatus=myConfig.iAus;
-  myservo.write(getKorrigiert(iStatus));
+  setServo(getKorrigiert(iStatus));
   if (bReload == "1") {
     Serial.println("Zur Root Seite weiterleiten");
     htmlreloadpresite("/","AUS");
@@ -649,14 +681,14 @@ void getConfig() {
 
 void setPosAn() {
         int iStatus=myConfig.iAn;
-        myservo.write(getKorrigiert(iStatus));
+        setServo(getKorrigiert(iStatus));
         Serial.printf("Switch AN Taster oder Schalter neuer Status: %i", getOnOffStatus());
         Serial.println("");
         sendTabState();  
 }
 void setPosAus() {
         int iStatus=myConfig.iAus;
-        myservo.write(getKorrigiert(iStatus));
+        setServo(getKorrigiert(iStatus));
         Serial.printf("Switch Aus Taster oder Schalter neuer Status: %i", getOnOffStatus());
         Serial.println("");
         sendTabState();  
@@ -766,7 +798,9 @@ void setup() {
   
   Serial.println("--------------- Setup Servo -------------");
   myservo.attach(iServoPin); 
-  myservo.write(getKorrigiert(iStatus));
+  setServo(getKorrigiert(iStatus));
+  delay(500);
+  myservo.detach();
   Serial.println("--------------- Setup Pins -------------");
   for (int i=0; i<2 ; i++) {
       pinMode(iPushButtonPin[i], INPUT);

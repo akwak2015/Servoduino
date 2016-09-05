@@ -353,7 +353,7 @@ void wwwRoot() {
 }
 
 void wwwmelde_status() {
-  int iErg = getOnOffStatus();
+  int iErg = getOnOffStatus(true);
   server.send(200, "text/plain", String(iErg));
 }
 

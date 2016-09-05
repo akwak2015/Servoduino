@@ -103,7 +103,7 @@ void handleudp(){
          ReplyBufferState[0]='0';
     }
     if (charcomp(packetBuffer,"status")) {
-         int iStatus = getOnOffStatus();
+         int iStatus = getOnOffStatus(true);
          ReplyBufferState[0]=String(iStatus).charAt(1);
     }
     if (charcomp(packetBuffer,"ran")) {

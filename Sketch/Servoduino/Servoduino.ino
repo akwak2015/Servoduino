@@ -32,6 +32,7 @@ struct oconfig {
   char sIP[16];
   char sSubNet[16];
   char sGateway[16]; 
+  int bExpLogic;  // Schaltlogic der eingänge (switch gegen +5V oder GND) (0 fuer gegen GND)
 };
 typedef struct oconfig oConfig;
 
@@ -45,7 +46,7 @@ typedef struct oconfig oConfig;
 String sVersionDatum = "2016-09-05";
 String sVersion = "0.8.2";
 
-oConfig myConfig = {1234, 4321, 2, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000"};
+oConfig myConfig = {1234, 4321, 3, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000", 0};
 
 //Pin Definitionen
 int iServoPin = 2; //WeMos mini D4
@@ -108,6 +109,7 @@ void wwwmelde_status();
 void wwwmelde_FullStatus();
 void htmlreloadpresite(String sTarget, String sText);
 void htmlresponse0(String sText);
+void wwwSwitchLogic();
 //myhandler
 void handlePushButton(int iPB);
 void handleSwitch(int iSW);
@@ -119,6 +121,7 @@ void handleRelayTimer();
 int getServo (bool bForcePinRead = false);
 int getOnOffStatus(bool bForcePinRead = false);
 int getStatus(bool bForcePinRead = false);
+bool logichandler(int iPin = 0);
 
 // *******************************************************************
 // ******* Programm          *****************************************
@@ -163,9 +166,11 @@ void setRelayTimerSec(int iTime) {
 }
 
 void saveConfig() {
+  Serial.println("__________ Save Config ________");
   int eeAddress = 0;
   EEPROM.begin(256);
   EEPROM.put(eeAddress, myConfig);
+  delay(200);
   EEPROM.end();
 
 //EEPROM.begin(0);
@@ -202,7 +207,7 @@ int getOnOffStatus(bool bForcePinRead) {
     int iErg=-1;
     if (myConfig.bMagnetsensor==1) {
     delay(500);
-    if (digitalRead(iMagnetsensorPin) == HIGH) {
+    if (logichandler(iMagnetsensorPin) == HIGH) {
       iErg=1;
     } else {
       iErg=0;
@@ -248,7 +253,7 @@ void sendTabState2Loxone() {
 void sendRelayState2Loxone() {
     if (myConfig.bLoxone != 1) {return;}
 //    int iPort  = atoi(myConfig.sLoxonePort); 
-//    int iStatus = digitalRead(iRelayPin);
+//    int iStatus = (iRelayPin);
 //    char  sBuffer[8] = "";
 //    String("RELAY" + String(iStatus)).toCharArray(sBuffer,8); 
 //    Serial.print("Sende an Loxone: ");
@@ -476,7 +481,7 @@ void wwwSave() {
   String sIP = server.arg("IP");
   String sSubNet = server.arg("Sub");
   String sGateway = server.arg("GW"); 
-
+  String bExpLogic = server.arg("Logic");
 
   Serial.println("Save Parameter Temporarly ------");
   Serial.println("an:                 " + sAn );
@@ -509,7 +514,9 @@ void wwwSave() {
   Serial.println("Subnet              " + sSubNet);
   Serial.println("Gateway             " + sGateway); 
   Serial.println("-------------------------------");
-  
+  Serial.println("Logic               " + String(bExpLogic));
+  Serial.println("-------------------------------");
+ 
   if (sAn!="") {myConfig.iAn = sAn.toInt();}
   if (sAus!="") {myConfig.iAus = sAus.toInt();}
   if (sKorrektur!="") {myConfig.iKorrektur = sKorrektur.toInt();}
@@ -599,7 +606,14 @@ void wwwSave() {
   if (sSubNet != "") { sSubNet.toCharArray(myConfig.sSubNet ,16);}
   if (sGateway != "") { sGateway.toCharArray(myConfig.sGateway,16);} 
 
+  if (bExpLogic =="on") {
+    myConfig.bExpLogic = 1;
+    }
+    else {
+      myConfig.bExpLogic = 0;
+    }
   saveConfig();
+  delay(200);
   htmlreloadpresite("/setup","Speicher Parameter");
  
 }
@@ -626,6 +640,7 @@ void printConfig() {
  Serial.println("Loxone       : " + String(myConfig.bLoxone)); 
  Serial.println("Loxone IP    : " + String(myConfig.sLoxoneIP)); 
  Serial.println("Loxone Geraet: " + String(myConfig.sLoxonePort)); 
+ Serial.println("Logic Inputs : " + String(myConfig.bExpLogic)); 
 
 }
 
@@ -672,6 +687,9 @@ void getConfig() {
         strncpy(myConfig.sIP,tmpConfig.sIP,16);
         strncpy(myConfig.sSubNet,tmpConfig.sSubNet,16);
         strncpy( myConfig.sGateway,tmpConfig.sGateway,16); 
+      }
+    if (tmpConfig.iConfigVersion>=3) {
+        myConfig.bExpLogic=tmpConfig.bExpLogic;
       }
     }
   else {
@@ -791,7 +809,7 @@ void setup() {
   server.on("/raus", wwwrelayaus);
   server.on("/anwert", wwwanwert); //Analog Wert für Anzeige auf Startsite
   server.on("/fullstatus", wwwmelde_FullStatus);
-  
+  server.on("/switchlogic", wwwSwitchLogic);
   server.begin();
   Serial.println("--------------- Setup UDP --------");
   Udp.begin(localPort);
@@ -805,6 +823,13 @@ void setup() {
   for (int i=0; i<2 ; i++) {
       pinMode(iPushButtonPin[i], INPUT);
       pinMode(iSwitchPin[i], INPUT);
+      if ( myConfig.bExpLogic == 0) {
+        digitalWrite(iPushButtonPin[i],HIGH);
+        digitalWrite(iSwitchPin[i],HIGH);
+      } else {
+        digitalWrite(iPushButtonPin[i],LOW);
+        digitalWrite(iSwitchPin[i],LOW);      
+      }
   }
   pinMode(iRelayPin, OUTPUT);
   Serial.println("--------------- Hausautomation aktualisieren --------");

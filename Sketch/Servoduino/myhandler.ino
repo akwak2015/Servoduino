@@ -12,13 +12,29 @@ bool charcomp(char* cbuf, String scmp) {
       return bErg;        
 }
 
+bool logichandler(int iPin) {
+  int iStateTmp = digitalRead(iPin);
+  if (myConfig.bExpLogic == 1) { // High Logic
+    //Serial.println("Positive Logic"); 
+    return iStateTmp;
+  }
+  else {  // GND Logic daher 0 und 1 vertauschen
+    //Serial.println("Negative Logic"); 
+    if (iStateTmp == 0) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+}
+
 void handlePushButton(int iPB) {
     unsigned long currentMillis = millis();
     // Entprellen 
     if ((currentMillis - tPushButtonLast[iPB]) > 500) {
         //Serial.printf("Handle Pushbutton - Current: %i, Last: %i, Diff: %i", currentMillis, tPushButtonLast[iPB], (currentMillis - tPushButtonLast[iPB]));
         //Serial.println("");
-        int iPushButtonState = digitalRead(iPushButtonPin[iPB]);
+        int iPushButtonState = logichandler(iPushButtonPin[iPB]);
         if ((iPushButtonState == 1) and iPushButtonState != iPushButtonLastState[iPB]) {
             if (myConfig.bPushButtonTimer[iPB]) {
               setTimerSec(myConfig.iPushButtonTimer[iPB]);
@@ -41,7 +57,7 @@ void handlePushButton(int iPB) {
 }
 void handleSwitch(int iSW){
     unsigned long currentMillis = millis();
-    int iSwitchState = digitalRead(iSwitchPin[iSW]);  
+    int iSwitchState = logichandler(iSwitchPin[iSW]);  
     if (iSwitchState != iSwitchLastState[iSW]) {
         //Switch on
         if (iSwitchState == 1) {

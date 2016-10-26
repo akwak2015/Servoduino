@@ -311,6 +311,28 @@ void wwwSetup() {
   sResp += "  </div>\n";
   sResp += "  </div>\n";
   sResp += "\n";
+  // ------------------
+  // Expertenparameter
+  // ------------------
+//  sResp += "  <p class=\"sys2inf\"><b>Sonstige Einstellungen</b></p>\n";
+//  sResp += " <div id=\"ExpertParameter\">\n";
+//  sResp +=      htmlSwitch("Expert",0 ,"Expertenparameter");
+//  sResp += "    <label for=\"Expert\">Expertenparameter</label>\n";
+//  sResp += "    <div id=\"Expertenparameter\" " + htmlDisplay(0) + ">\n";
+//  sResp += "    Änderungen in diesem Bereich können die Funktionalität nachhaltig stören";
+//  sResp += "      <table class=\"Expert\">\n";
+//  sResp += "        <TR>\n";
+//  sResp += "          <TD class=\"firstButton\">\n";
+//  sResp +=              htmlSwitch("Logic",myConfig.bExpLogic,"");
+//  sResp += "          </TD>\n";
+//  sResp += "          <TD class=\"second\">\n";
+//  sResp += "            Taster & Schalter ueber +5V (Standard = OFF)\n";
+//  sResp += "          </TD>\n";
+//  sResp += "        </TR>\n";
+//  sResp += "      </table>\n";
+//  sResp += "    </div>\n";
+//  sResp += "  </div>\n";
+    
   sResp += "  <div style =\"padding-top: 30px;position: relative;\">\n";
   sResp += "  <button type=\"submit\" name =\"action\" style =\"position: absolute;right: 10px;top: 5px;\"> Absenden </button>\n";
   sResp += "  </div>\n";
@@ -330,6 +352,9 @@ void wwwRoot() {
   sResp +="   setInterval(sndReqFull, 1000);";
   sResp +="</script>\n";
   sResp += "<h1>Servo Steuerung</h1>\n";
+  if (myConfig.bExpLogic == 1) {
+    sResp += "<H1 stype=\"color:red\">Achtung Falsche Logik für Holgers Rahmen!</H1>";
+  }
   sResp += "<p class=\"small\">Version: " + sVersion + "<br> vom " + sVersionDatum + " </p>\n";
 //  sResp += "Aktueller Status: <div id=\"divGrad\" name=\"divGrad\" style=\"display: inline-block;\">" + String(getStatus())+"</div><br>\n";
 //  sResp += "Analog Wert:      <div id=\"divAnWert\" name=\"divAnWert\" style=\"display: inline-block;\">0</div>\n";
@@ -410,10 +435,27 @@ void htmlreloadpresite(String sTarget, String sText="") {
 }
 
 void htmlresponse0(String sText = "") {
-    String sResponse;
     Serial.println("htmlresponse0");
-    server.send(200, "text/plain", sText);
-    Serial.println("htmlresponse0 end");
+    if (sText != "") {
+      server.send(200, "text/plain", sText);
+      Serial.println("htmlresponse0 Plain Text send");
+    }
 }
 
+void wwwSwitchLogic() {
+  String sResponse;
+  if (myConfig.bExpLogic == 1) {
+     myConfig.bExpLogic = 0; 
+     Serial.println("Logic entsprechend Voreinstellung - Schalten ueber GND");
+     sResponse = "Toggle Logic: Logic entsprechend Voreinstellung - Schalten &uuml;ber GND";
+  }
+  else {
+     myConfig.bExpLogic = 1;
+     Serial.println("Logic abweichend von Voreinstellung - Schalten ueber +5V");
+     sResponse = "Toggle Logic: Logic abweichend von Voreinstellung - Schalten &uuml;ber +5V";
+  }
+  saveConfig;
+  delay(200);
+  htmlreloadpresite("/", sResponse); 
+}
 

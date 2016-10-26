@@ -118,6 +118,13 @@ String cssForm() {
   sReturn += "    padding: 5px;\n";
   sReturn += "    clear: both;\n";
   sReturn += "    }\n";
+  sReturn += "  table.Expert {\n";
+  sReturn += "    background-color: #ffe0e0;\n"; //lightgreen
+  sReturn += "    border-radius: 5px;\n";
+  sReturn += "    padding: 5px;\n";
+  sReturn += "    clear: both;\n";
+  sReturn += "    }\n";
+
   sReturn += "  td.on {background-color: lightgreen;}\n";
   sReturn += "  td.off {background-color: #ff8080;}\n";
   sReturn += "  td.timeron {background-color: #e2ffc6; text-align: right;}\n";

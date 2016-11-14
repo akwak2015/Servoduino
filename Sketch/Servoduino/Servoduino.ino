@@ -43,8 +43,8 @@ typedef struct oconfig oConfig;
 
 //Version
 //$Revision: 21 $
-String sVersionDatum = "2016-09-05";
-String sVersion = "0.8.2";
+String sVersionDatum = "2016-11-14";
+String sVersion = "0.8.3";
 
 oConfig myConfig = {1234, 4321, 3, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000", 0};
 
@@ -172,11 +172,6 @@ void saveConfig() {
   EEPROM.put(eeAddress, myConfig);
   delay(200);
   EEPROM.end();
-
-//EEPROM.begin(0);
-//Serial.println("__________ Save Config ________");
-//EEPROM_writeAnything(0, tmpConfig);
-//EEPROM.end();
 }
 
 
@@ -741,11 +736,11 @@ void resetWiFi() {
 }
 
 void resetConfig() {
-   EEPROM.begin(0);
+   EEPROM.begin(256);
    for (int i = 0 ; i < 512 ; i++) {
      EEPROM.write(i, 0);
-     EEPROM.end();
   }
+   EEPROM.end();
 }
 
 void resetAll() {

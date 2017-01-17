@@ -562,12 +562,14 @@ void wwwSave() {
      myConfig.bPushButtonTimer[1] = 0;
   }
 
-  if (sMagnetSchalter =="on") {
-          myConfig.bMagnetsensor = 1;
-      } else {
-          myConfig.bMagnetsensor = 0;
+  //Quick and dirty - Magnetsensorfunktion deaktivieren
+  myConfig.bMagnetsensor = 0;
+//  if (sMagnetSchalter =="on") {
+//          myConfig.bMagnetsensor = 1;
+//      } else {
+//          myConfig.bMagnetsensor = 0;
+//      }
 
-      }
   if (sAnalogSchwelle !="") { myConfig.iAnalogSchwelle = sAnalogSchwelle.toInt();}
   
 // ----- Homematic
@@ -670,7 +672,9 @@ void getConfig() {
     }
     if (tmpConfig.iConfigVersion>=2) {
         myConfig.iAnalogSchwelle = tmpConfig.iAnalogSchwelle;
-        myConfig.bMagnetsensor = tmpConfig.bMagnetsensor;
+        //Quick and dirty Deaktivieren
+        //myConfig.bMagnetsensor = tmpConfig.bMagnetsensor;
+        myConfig.bMagnetsensor = 0;
         myConfig.bHomematic=tmpConfig.bHomematic;
         strncpy(myConfig.sHomematicIP,tmpConfig.sHomematicIP,16);
         strncpy(myConfig.sHomematicGeraet,tmpConfig.sHomematicGeraet,20);
@@ -810,10 +814,11 @@ void setup() {
   Udp.begin(localPort);
   
   Serial.println("--------------- Setup Servo -------------");
-  myservo.attach(iServoPin); 
-  setServo(getKorrigiert(iStatus));
-  delay(500);
-  myservo.detach();
+//  myservo.attach(iServoPin); 
+//  setServo(getKorrigiert(iStatus));
+//  delay(500);
+//  myservo.detach();
+  setPosAus();
   Serial.println("--------------- Setup Pins -------------");
   for (int i=0; i<2 ; i++) {
       pinMode(iPushButtonPin[i], INPUT);
@@ -826,6 +831,8 @@ void setup() {
         digitalWrite(iSwitchPin[i],LOW);      
       }
   }
+  pinMode(iMagnetsensorPin, INPUT);
+  digitalWrite(iMagnetsensorPin,HIGH);
   pinMode(iRelayPin, OUTPUT);
   Serial.println("--------------- Hausautomation aktualisieren --------");
   sendState();

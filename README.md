@@ -16,14 +16,12 @@ Teilweise ist es schon einsatzfähig.
 	-	Relais an/aus per HTTP/UDP
 	-	Rückmeldung an die Homematic CCU
 	-	Rückmeldung an Loxone
-
-#####Was läuft vieleicht:
-	-	Rückmeldung mit zusätzlichem Reed/Magnet Kontakt
+	-	Option Schalter wie Taster (mit eigenem Timer)
+	-	Option Taster mit eigenem Timer
 	-	Analoger Eingang
 
 #####Was läuft nicht:
-	-	Option Schalter wie Taster (mit eigenem Timer)
-	-	Option Taster mit eigenem Timer
+
 	
 ####Welche Hausautomationssysteme werden unterstützt?
 Aktuell werden unterstützt:
@@ -50,9 +48,8 @@ Die Pin angaben sind für den Wemos D1 Mini
 | ------------------------- | -------------- |
 | Servo Motor               | D4             |
 | Taster                    | D5 und/oder D6 |
-| Schalter                  | D7 und/oder D8 |
+| Schalter                  | D7 			 |
 | Relais                    | D1             |
-| Zusätzlicher Magnetsensor | D2             |
 | Analog Eingang            | A0             |
  
 ####Welche Befehle werden verstanden?
@@ -115,7 +112,7 @@ Für Jede Statusänderung des Servos oder Relais (0 für aus, 1 für an):
 	TAB1|0  
 	RELAY1|0   
 Für jede Taste/Schalter in eckigen Klammern [0 = Schalter 1, 1 = Schalter 2] gefolgt von 0 für aus, 1 für an:  
-	Schalter[0|1]0|1  
+	Schalter[0]0|1  
 	Taster[0|1]0|1  
 	Web0|1  
 	RWeb0|1   

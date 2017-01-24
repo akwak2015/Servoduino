@@ -155,22 +155,16 @@ void handleAnalog() {
   unsigned long currentMillis = millis();
   if  (currentMillis < iAnaloglastMillis + 1000) { return ;} // Statuswechsel innerhalb 1 Sekunden ignorieren
   //Serial.println(String(iSensorValue) + ":" + String(myConfig.iAnalogSchwelle)); 
-  if (iSensorValue > myConfig.iAnalogSchwelle) {
-      if (iAnalogLastState==0){
-         setPosAn();
-         sendUDP("Analog1");
-         iAnalogLastState = 1;
-      }
-  } 
-  else {
-      if (iAnalogLastState==1){
-          setPosAus();
-          sendUDP("Analog0");
-          iAnalogLastState = 0;
-      }
+  if (currentMillis < iTimerOffTime + 5000) {return;} // Abkühlzeit. Relais aus Triggert sonst Analog in.
+    if (iSensorValue > myConfig.iAnalogSchwelle) {
+        setTimerSec(myConfig.iAnalogTimer);
+        if(getOnOffStatus()== 0) { 
+          setPosAn(); 
+          }
+        iAnaloglastMillis = currentMillis ;   
+    } 
   }
-  iAnaloglastMillis = currentMillis ; 
-}
+
 
 void handleTimer(){
   if (bTimerAktiv) {
@@ -180,6 +174,7 @@ void handleTimer(){
          setPosAus();
          sendUDP("Timer0");
          bTimerAktiv=false;
+         iTimerOffTime=millis();
     }
   } 
 }

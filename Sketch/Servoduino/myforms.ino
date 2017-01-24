@@ -164,23 +164,30 @@ void wwwSetup() {
   sResp += "      <TD class=\"second\">\n";
   sResp += "        <input class=\"field\" name=\"AnalogSchwelle\" type=\"number\" min=\"0\" max=\"9999\" step=\"1\" value=\""+ String(myConfig.iAnalogSchwelle) + "\">\n";
   sResp += "      </TD>\n";
+    //Analog Timer
   sResp += "    </TR>\n";
+  sResp += "    <TR>\n";
+  sResp += "      <TD class=\"first\">\n";
+  sResp += "        Timer Analogeingang (Sek)\n";
+  sResp += "      </TD>\n";
+  sResp += "      <TD class=\"second\">\n";
+  sResp += "        <input class=\"field\" name=\"AnalogTime\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iAnalogTimer) + "\"/></TD>\n";
+  sResp += "      </TD>\n";
+  sResp += "    </TR>\n";
+
   sResp += "</table>";
 
-  // -- MagnetSchalter 
+  //Schalter
   sResp += "  <table class=\"fixed\">\n";
-  sResp += "    <TR>\n";
-  sResp += "      <TD class=\"firstButton\">\n";
-  sResp += htmlSwitch("MagnetSchalter",myConfig.bMagnetsensor,"");
-
-//  sResp += "          <input type=\"checkbox\" name=\"MagnetSchalter\" \n";
-//                        if(myConfig.bMagnetsensor==1) { sResp += "checked=\"checked\"\n";}
-//                      sResp += ">\n";
-  sResp += "    </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        Magnet Sensor vorhanden\n";
-  sResp += "      </TD>\n";
-  sResp += "  </TR>\n";
+  // -- MagnetSchalter 
+//  sResp += "    <TR>\n";
+//  sResp += "      <TD class=\"firstButton\">\n";
+//  sResp += htmlSwitch("MagnetSchalter",myConfig.bMagnetsensor,"");
+//  sResp += "    </TD>\n";
+//  sResp += "      <TD class=\"second\">\n";
+//  sResp += "        Magnet Sensor vorhanden\n";
+//  sResp += "      </TD>\n";
+//  sResp += "  </TR>\n";
   // -- Schalter1   
   sResp += "  <TR>\n";
   sResp += "      <TD class=\"firstButton\">\n";
@@ -195,19 +202,19 @@ void wwwSetup() {
   sResp += "    <TD class=\"second\"><input class=\"field\" name=\"SchalterTime1\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iSwitchTimer[0]) +  "\"/></TD>\n";
   sResp += "  </TR>\n";
   // -- Schalter2 
-  sResp += "  <TR>\n";
-  sResp += "      <TD class=\"firstButton\">\n";
-  sResp += htmlSwitch("SchalterWieTaster2",myConfig.bSwitchAsPushButton[1] ,"swt2");
-  sResp += "    </TD>\n";
-  sResp += "      <TD class=\"second\">\n";
-  sResp += "        Schalter 2 wie Taster\n";
-  sResp += "      </TD>\n";
-  sResp += "        <!-- if (myConfig.bSwitchAsPushButton) { -->\n";
-  sResp += "  </TR>\n";
-  sResp += "  <TR id=\"swt2\" class=\"hidden\" " + htmlDisplay(myConfig.bSwitchAsPushButton[1]) + ">\n";
-  sResp += "    <TD class=\"first\">Schaltzeit: </TD>\n";
-  sResp += "    <TD class=\"second\"><input class=\"field\" name=\"SchalterTime2\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iSwitchTimer[1]) +  "\"/></TD>\n";
-  sResp += "  </TR>\n";
+//  sResp += "  <TR>\n";
+//  sResp += "      <TD class=\"firstButton\">\n";
+//  sResp += htmlSwitch("SchalterWieTaster2",myConfig.bSwitchAsPushButton[1] ,"swt2");
+//  sResp += "    </TD>\n";
+//  sResp += "      <TD class=\"second\">\n";
+//  sResp += "        Schalter 2 wie Taster\n";
+//  sResp += "      </TD>\n";
+//  sResp += "        <!-- if (myConfig.bSwitchAsPushButton) { -->\n";
+//  sResp += "  </TR>\n";
+//  sResp += "  <TR id=\"swt2\" class=\"hidden\" " + htmlDisplay(myConfig.bSwitchAsPushButton[1]) + ">\n";
+//  sResp += "    <TD class=\"first\">Schaltzeit: </TD>\n";
+//  sResp += "    <TD class=\"second\"><input class=\"field\" name=\"SchalterTime2\" type=\"number\" min=\"5\" max=\"3600\" step=\"5\" value=\""+ String(myConfig.iSwitchTimer[1]) +  "\"/></TD>\n";
+//  sResp += "  </TR>\n";
   // -- Taster 1
   sResp += "  <TR>\n";
   sResp += "    <TD class=\"firstButton\">\n";

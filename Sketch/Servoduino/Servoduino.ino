@@ -8,6 +8,9 @@
 #include <WiFiUdp.h>
 #include <EEPROM.h>
 
+#define iSwitchPinCount 1
+#define iPushButtonPinCount 2
+
 struct oconfig {
   int bValidConfig1;
   int bValidConfig2;
@@ -15,10 +18,10 @@ struct oconfig {
   int iAn;
   int iAus;
   int iKorrektur;
-  int bSwitchAsPushButton[2];
-  int iSwitchTimer[2];
-  int bPushButtonTimer[2];
-  int iPushButtonTimer[2];
+  int bSwitchAsPushButton[iSwitchPinCount];
+  int iSwitchTimer[iSwitchPinCount];
+  int bPushButtonTimer[iPushButtonPinCount];
+  int iPushButtonTimer[iPushButtonPinCount];
   int bMagnetsensor;
   int iAnalogSchwelle;
   int bHomematic;
@@ -33,6 +36,7 @@ struct oconfig {
   char sSubNet[16];
   char sGateway[16]; 
   int bExpLogic;  // Schaltlogic der eingänge (switch gegen +5V oder GND) (0 fuer gegen GND)
+  int iAnalogTimer;
 };
 typedef struct oconfig oConfig;
 
@@ -43,22 +47,22 @@ typedef struct oconfig oConfig;
 
 //Version
 //$Revision: 21 $
-String sVersionDatum = "2016-11-14";
-String sVersion = "0.8.3";
+String sVersionDatum = "2017-01-20";
+String sVersion = "0.9";
 
-oConfig myConfig = {1234, 4321, 3, 0, 180, 10, {0, 0}, {60, 60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000", 0};
+oConfig myConfig = {1234, 4321, 4, 0, 180, 10, {0}, {60}, {0, 0}, {120, 120}, 0 , 1000, 0, "000.000.000.000", "Seriennummer","Seriennummer", 0, "000.000.000.000", "7000" , 0, "000.000.000.000", "000.000.000.000", "000.000.000.000", 0, 120};
 
 //Pin Definitionen
 int iServoPin = 2; //WeMos mini D4
-int iPushButtonPin[] = {14, 12}  ; //WeMos mini D5 und D6
-int iSwitchPin[] = {13, 15}; //WeMos mini D7 und D8
+int iPushButtonPin[] = {14, 12}  ; //WeMos mini D5 und D6 (Groesse des Arrays in iPushButtonPinCount definiert (weiter oben))
+int iSwitchPin[] = {13}; //WeMos mini D7 (Groesse des Arrays in iSwitchPinCount definiert (weiter oben))
 int iRelayPin = 5; //Wemos mini D1 -> RelayBoard
-int iMagnetsensorPin = 4; //Wemos mini D2 - MagnetSensor
+int iMagnetsensorPin = 4; //Wemos mini D2 - MagnetSensor (Wird aktuell nicht mehr benutzt!)
 // Analog Pin auf Wemos A0 => int sensorValue = analogRead(A0); 
 
 // Aktueller Servo Status
 int iServoPosAkt = -1;
-
+int iTimerOffTime = 0;
 // OTA
 const char* update_path = "/firmware";
 const char* update_username = "admin";
@@ -156,7 +160,7 @@ int getServo (bool bForcePinRead) {
 void setTimerSec(int iTime) { 
   iTimerMillis = millis()+(1000 * iTime);
   bTimerAktiv = true;
-  Serial.println("Timer aktiv: " + String(1000*iTime));
+  Serial.println(String(millis()) + "Timer aktiv: " + String(1000*iTime));
 }
 
 void setRelayTimerSec(int iTime) { 
@@ -200,18 +204,18 @@ int getStatus(bool bForcePinRead) {
 
 int getOnOffStatus(bool bForcePinRead) {
     int iErg=-1;
-    if (myConfig.bMagnetsensor==1) {
-    delay(500);
-    if (logichandler(iMagnetsensorPin) == HIGH) {
-      iErg=1;
-    } else {
-      iErg=0;
-    }
-  } else {    
+//    if (myConfig.bMagnetsensor==1) {
+//      delay(500);
+//      if (logichandler(iMagnetsensorPin) == HIGH) {
+//        iErg=1;
+//      } else {
+//        iErg=0;
+//      }
+//  } else {    
     int iStatus = getStatus(bForcePinRead);
     if (iStatus == myConfig.iAn) iErg=1; 
     if (iStatus == myConfig.iAus) iErg=0; 
-  }
+//  }
   return iErg;
 }
 
@@ -455,8 +459,8 @@ void wwwSave() {
   String sSchalterTime1 = server.arg("SchalterTime1");
   String sTasterMitTimer1 = server.arg("TasterMitTimer1");
   String sTasterTime1 = server.arg("TasterTime1");
-  String sSchalterWieTaster2 = server.arg("SchalterWieTaster2");
-  String sSchalterTime2 = server.arg("SchalterTime2");
+//  String sSchalterWieTaster2 = server.arg("SchalterWieTaster2");
+//  String sSchalterTime2 = server.arg("SchalterTime2");
   String sTasterMitTimer2 = server.arg("TasterMitTimer2");
   String sTasterTime2 = server.arg("TasterTime2");
   String sMagnetSchalter = server.arg("MagnetSchalter");
@@ -477,6 +481,7 @@ void wwwSave() {
   String sSubNet = server.arg("Sub");
   String sGateway = server.arg("GW"); 
   String bExpLogic = server.arg("Logic");
+  String sAnalogTimer = server.arg("AnalogTime");
 
   Serial.println("Save Parameter Temporarly ------");
   Serial.println("an:                 " + sAn );
@@ -488,11 +493,12 @@ void wwwSave() {
   Serial.println("TasterMitTimer1:    " + sTasterMitTimer1 );
   Serial.println("TasterTime1:        " + sTasterTime1 );
   Serial.println("---");
-  Serial.println("SchalterWieTaster2: " + sSchalterWieTaster2 );
-  Serial.println("SchalterTime2:      " + sSchalterTime2 );
+//  Serial.println("SchalterWieTaster2: " + sSchalterWieTaster2 );
+//  Serial.println("SchalterTime2:      " + sSchalterTime2 );
   Serial.println("TasterMitTimer2:    " + sTasterMitTimer2 );
   Serial.println("TasterTime2:        " + sTasterTime2 );
-  Serial.println("MagnetSchater:      " + sMagnetSchalter );
+  Serial.println("Analog Time:        " + sAnalogTimer);
+//  Serial.println("MagnetSchater:      " + sMagnetSchalter );
   Serial.println("AnalogSchwelle:     " + sAnalogSchwelle );
 
   Serial.println("-------------------------------");
@@ -529,15 +535,15 @@ void wwwSave() {
   }
 
 //Schalter 2
-  if (sSchalterWieTaster2 =="on") {
-      myConfig.bSwitchAsPushButton[1] = 1;
-      if (sSchalterTime2!="") {
-         myConfig.iSwitchTimer[1] = sSchalterTime2.toInt();
-      }
-  }
-  else {
-    myConfig.bSwitchAsPushButton[1] = 0;
-  }
+//  if (sSchalterWieTaster2 =="on") {
+//      myConfig.bSwitchAsPushButton[1] = 1;
+//      if (sSchalterTime2!="") {
+//         myConfig.iSwitchTimer[1] = sSchalterTime2.toInt();
+//      }
+//  }
+//  else {
+//    myConfig.bSwitchAsPushButton[1] = 0;
+//  }
 
 // ---------------------- Taster mit Timer -------------------
 //Taster 1  
@@ -560,6 +566,11 @@ void wwwSave() {
   }
   else {
      myConfig.bPushButtonTimer[1] = 0;
+  }
+
+// Analog Timer
+  if (sAnalogTimer!="") {
+     myConfig.iAnalogTimer = sAnalogTimer.toInt();
   }
 
   //Quick and dirty - Magnetsensorfunktion deaktivieren
@@ -627,10 +638,11 @@ void printConfig() {
  Serial.println("SwitchTimer  : " + String(myConfig.iSwitchTimer[0]));
  Serial.println("PB with Timer: " + String(myConfig.bPushButtonTimer[0]));
  Serial.println("PB Timer     : " + String(myConfig.iPushButtonTimer[0]));  
- Serial.println("SwitchAsPush : " + String(myConfig.bSwitchAsPushButton[1]));
- Serial.println("SwitchTimer  : " + String(myConfig.iSwitchTimer[1]));
+// Serial.println("SwitchAsPush : " + String(myConfig.bSwitchAsPushButton[1]));
+// Serial.println("SwitchTimer  : " + String(myConfig.iSwitchTimer[1]));
  Serial.println("PB with Timer: " + String(myConfig.bPushButtonTimer[1]));
- Serial.println("PB Timer     : " + String(myConfig.iPushButtonTimer[1]));  
+ Serial.println("PB Timer     : " + String(myConfig.iPushButtonTimer[1]));
+ Serial.println("Analog Timer : " + String(myConfig.iAnalogTimer)); 
  Serial.println("Homematic    : " + String(myConfig.bHomematic)); 
  Serial.println("Homatic IP   : " + String(myConfig.sHomematicIP)); 
  Serial.println("Homematic Ger: " + String(myConfig.sHomematicGeraet)); 
@@ -660,7 +672,7 @@ void getConfig() {
     myConfig.iAn=tmpConfig.iAn;
     myConfig.iAus=tmpConfig.iAus;
     myConfig.iKorrektur=tmpConfig.iKorrektur;
-    if (tmpConfig.iConfigVersion>=1) {
+    if ((tmpConfig.iConfigVersion>=1) and (tmpConfig.iConfigVersion<4)) {
         myConfig.bSwitchAsPushButton[0]=tmpConfig.bSwitchAsPushButton[0];
         myConfig.iSwitchTimer[0]=tmpConfig.iSwitchTimer[0];
         myConfig.bPushButtonTimer[0]=tmpConfig.bPushButtonTimer[0];
@@ -690,6 +702,19 @@ void getConfig() {
     if (tmpConfig.iConfigVersion>=3) {
         myConfig.bExpLogic=tmpConfig.bExpLogic;
       }
+    if ((tmpConfig.iConfigVersion>=4)) {
+        myConfig.bSwitchAsPushButton[0]=tmpConfig.bSwitchAsPushButton[0];
+        myConfig.iSwitchTimer[0]=tmpConfig.iSwitchTimer[0];
+        myConfig.bPushButtonTimer[0]=tmpConfig.bPushButtonTimer[0];
+        myConfig.iPushButtonTimer[0]=tmpConfig.iPushButtonTimer[0];
+//        myConfig.bSwitchAsPushButton[1]=tmpConfig.bSwitchAsPushButton[1];  // ist in Version 4 rausgeflogen
+//        myConfig.iSwitchTimer[1]=tmpConfig.iSwitchTimer[1]; // ist in Version 4 rausgeflogen
+        myConfig.bPushButtonTimer[1]=tmpConfig.bPushButtonTimer[1];
+        myConfig.iPushButtonTimer[1]=tmpConfig.iPushButtonTimer[1];
+
+        myConfig.iAnalogTimer=tmpConfig.iAnalogTimer; 
+    }
+
     }
   else {
      Serial.println("Kein gueltige Konfiguration gefunden.... arbeite mit Default Werten");   
@@ -820,17 +845,23 @@ void setup() {
 //  myservo.detach();
   setPosAus();
   Serial.println("--------------- Setup Pins -------------");
-  for (int i=0; i<2 ; i++) {
+  for (int i=0; i<iPushButtonPinCount ; i++) {
       pinMode(iPushButtonPin[i], INPUT);
-      pinMode(iSwitchPin[i], INPUT);
       if ( myConfig.bExpLogic == 0) {
         digitalWrite(iPushButtonPin[i],HIGH);
-        digitalWrite(iSwitchPin[i],HIGH);
       } else {
         digitalWrite(iPushButtonPin[i],LOW);
+      }
+  }
+  for (int i=0; i<iSwitchPinCount ; i++) {
+      pinMode(iSwitchPin[i], INPUT);
+      if ( myConfig.bExpLogic == 0) {
+        digitalWrite(iSwitchPin[i],HIGH);
+      } else {
         digitalWrite(iSwitchPin[i],LOW);      
       }
   }
+  
   pinMode(iMagnetsensorPin, INPUT);
   digitalWrite(iMagnetsensorPin,HIGH);
   pinMode(iRelayPin, OUTPUT);
@@ -842,8 +873,10 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
     server.handleClient(); // auf HTTP-Anfragen warten
-    for (int i=0; i<2 ; i++) {
+    for (int i=0; i<iPushButtonPinCount ; i++) {
         handlePushButton(i);
+    }    
+    for (int i=0; i<iSwitchPinCount ; i++) {
         handleSwitch(i);
     }
     handleAnalog();
